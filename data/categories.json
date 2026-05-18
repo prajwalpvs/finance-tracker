@@ -1,0 +1,107 @@
+{
+  "Food & Dining": [
+    "uber eats", "doordash", "grubhub", "starbucks", "mcdonald", "chipotle",
+    "restaurant", "cafe", "pizza", "sushi", "taco", "burger", "diner",
+    "subway", "wendy", "chick-fil", "popeyes", "five guys", "shake shack",
+    "panera", "panda express", "domino", "papa john", "little caesar",
+    "dunkin", "tim horton", "smoothie king", "jamba juice", "sweetgreen",
+    "olive garden", "applebee", "chili", "ihop", "denny", "waffle house",
+    "red lobster", "outback", "cheesecake factory", "dining", "eatery",
+    "kitchen", "grill", "bistro", "bar & grill", "food", "bakery"
+  ],
+  "Groceries": [
+    "whole foods", "trader joe", "walmart", "costco", "kroger", "safeway",
+    "aldi", "wegmans", "publix", "h-e-b", "meijer", "stop & shop",
+    "giant", "food lion", "sprouts", "fresh market", "market basket",
+    "shoprite", "harris teeter", "winn-dixie", "save-a-lot", "lidl",
+    "grocery", "supermarket", "food mart", "fresh fare"
+  ],
+  "Transport": [
+    "uber", "lyft", "shell", "exxon", "chevron", "bp", "parking",
+    "metro", "transit", "gas station", "mobil", "sunoco", "marathon",
+    "speedway", "circle k", "wawa", "kwik trip", "pilot", "flying j",
+    "amtrak", "greyhound", "taxi", "cab", "toll", "ez pass",
+    "autozone", "advance auto", "jiffy lube", "valvoline", "pep boys",
+    "midas", "firestone", "discount tire", "goodyear", "car wash",
+    "enterprise", "hertz", "avis", "budget rent", "zipcar"
+  ],
+  "Shopping": [
+    "amazon", "target", "best buy", "ebay", "etsy", "macy", "nordstrom",
+    "walmart", "costco", "home depot", "lowe", "ikea", "tj maxx",
+    "marshalls", "ross", "burlington", "gap", "old navy", "banana republic",
+    "h&m", "zara", "uniqlo", "forever 21", "express", "american eagle",
+    "hollister", "abercrombie", "bath & body", "victoria secret",
+    "sephora", "ulta", "bed bath", "pier 1", "pottery barn", "crate & barrel",
+    "williams sonoma", "anthropologie", "free people", "urban outfitters",
+    "dick sporting", "rei", "academy sports", "cabela", "bass pro",
+    "foot locker", "nike", "adidas", "under armour", "apple store",
+    "microsoft store", "samsung", "gamestop", "b&h photo", "adorama",
+    "wayfair", "overstock", "chewy", "petco", "petsmart"
+  ],
+  "Entertainment": [
+    "netflix", "spotify", "hulu", "disney", "cinema", "amc theatre",
+    "steam", "playstation", "xbox", "nintendo", "twitch", "youtube premium",
+    "apple tv", "amazon prime video", "paramount", "peacock", "hbo",
+    "movie ticket", "regal cinema", "cinemark", "ticketmaster", "eventbrite",
+    "stubhub", "live nation", "bowling", "escape room", "arcade",
+    "dave & buster", "topgolf", "paintball", "laser tag", "mini golf",
+    "museum", "aquarium", "zoo", "concert", "theater", "opera",
+    "comedy club", "karaoke"
+  ],
+  "Subscriptions": [
+    "adobe", "microsoft", "github", "openai", "claude", "icloud",
+    "google storage", "dropbox", "box.com", "notion", "slack",
+    "zoom", "docusign", "canva", "figma", "sketch", "invision",
+    "grammarly", "last pass", "1password", "nordvpn", "expressvpn",
+    "mailchimp", "hubspot", "salesforce", "quickbooks", "turbotax",
+    "mint", "ynab", "personal capital"
+  ],
+  "Utilities": [
+    "electric", "water", "gas bill", "internet", "verizon", "at&t",
+    "t-mobile", "comcast", "xfinity", "spectrum", "cox communicat",
+    "dish network", "directv", "pge", "con edison", "duke energy",
+    "dominion energy", "national grid", "utility", "sewer", "trash",
+    "waste management", "republic services"
+  ],
+  "Health": [
+    "pharmacy", "cvs", "walgreens", "rite aid", "doctor", "clinic",
+    "hospital", "dental", "dentist", "optometrist", "urgent care",
+    "labcorp", "quest diagnostic", "kaiser", "blue cross", "aetna",
+    "cigna", "humana", "united health", "therapy", "counseling",
+    "chiropractor", "physical therapy", "dermatology", "psychiatry",
+    "orthopedic", "radiology", "imaging center", "medication"
+  ],
+  "Travel": [
+    "airline", "united", "delta", "southwest", "american air", "jetblue",
+    "spirit airline", "frontier", "alaska air", "hotel", "marriott",
+    "hilton", "hyatt", "ihg", "best western", "motel 6", "holiday inn",
+    "airbnb", "vrbo", "expedia", "booking.com", "hotels.com", "kayak",
+    "priceline", "trivago", "travelocity", "orbitz", "enterprise car",
+    "national car", "avis rent", "hertz rent", "tsa precheck",
+    "global entry", "travel insurance", "passport", "luggage",
+    "suitcase", "backpack"
+  ],
+  "Rent & Housing": [
+    "rent", "mortgage", "apartment", "hoa", "property tax",
+    "homeowner", "renter insurance", "storage unit", "u-haul",
+    "moving company", "realtor", "zillow", "redfin", "repair",
+    "plumber", "electrician", "contractor", "handyman", "painting"
+  ],
+  "Fitness": [
+    "gym", "planet fitness", "equinox", "peloton", "yoga", "crossfit",
+    "orangetheory", "anytime fitness", "24 hour fitness", "la fitness",
+    "gold gym", "crunch fitness", "ymca", "ywca", "pilates", "barre",
+    "soul cycle", "cycling studio", "marathon", "5k", "race entry",
+    "running", "athletic", "protein powder", "supplement", "gnc",
+    "vitamin shoppe"
+  ],
+  "Education": [
+    "coursera", "udemy", "udacity", "skillshare", "linkedin learning",
+    "tuition", "school", "university", "college", "community college",
+    "student loan", "textbook", "chegg", "chegg study", "pearson",
+    "mcgraw hill", "cengage", "khan academy", "duolingo", "rosetta stone",
+    "bootcamp", "coding school", "class", "course", "workshop", "seminar",
+    "conference", "library fine", "school supply"
+  ],
+  "Other": []
+}

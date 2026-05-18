@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FinanceTracker — Upload Statements</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <div class="page-upload">
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="flash-messages">
+          {% for msg in messages %}<div class="flash-error">{{ msg }}</div>{% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <div class="upload-container">
+
+      <!-- Hero -->
+      <div class="upload-header">
+        <div class="logo">
+          <div class="logo-icon">📊</div>
+          <span class="logo-text grad-text">FinanceTracker</span>
+        </div>
+        <h1 class="upload-headline">
+          Know exactly where<br>
+          <span class="grad-text">your money goes.</span>
+        </h1>
+        <p class="tagline">Upload your bank statement PDFs — get instant categorization, charts, and savings tips.</p>
+      </div>
+
+      <!-- Upload form -->
+      <form id="upload-form" method="POST" action="/upload" enctype="multipart/form-data">
+        <input type="file" id="file-input" name="pdfs" multiple accept=".pdf" hidden />
+
+        <div class="drop-zone" id="drop-zone">
+          <div class="drop-icon-wrap">📄</div>
+          <p class="drop-title">Drop your PDF statements here</p>
+          <p class="drop-sub">or <button type="button" class="browse-btn" onclick="document.getElementById('file-input').click()">click to browse</button></p>
+          <p class="drop-hint">Chase · Citi · Bank of America · and most bank formats</p>
+        </div>
+
+        <div id="file-list" class="file-list hidden" style="margin-top:16px"></div>
+
+        <button type="submit" id="submit-btn" class="btn-primary hidden" style="margin-top:16px">
+          <span id="btn-text">✨ Analyze Statements</span>
+          <span id="btn-spinner" class="spinner hidden"></span>
+        </button>
+      </form>
+
+      <!-- Feature cards -->
+      <div class="features">
+        <div class="feature-card">
+          <div class="feature-icon purple">🔒</div>
+          <h3>Private by Default</h3>
+          <p>Files processed locally and deleted after parsing — never stored permanently.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon green">⚡</div>
+          <h3>Instant Insights</h3>
+          <p>Transactions auto-categorized with rule-based matching in seconds.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon blue">📈</div>
+          <h3>Smart Tips</h3>
+          <p>Personalized savings tips based on your real spending patterns.</p>
+        </div>
+      </div>
+
+    </div><!-- /upload-container -->
+  </div><!-- /page-upload -->
+
+  <script>
+    const dropZone  = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const fileList  = document.getElementById('file-list');
+    const submitBtn = document.getElementById('submit-btn');
+    const form      = document.getElementById('upload-form');
+    const btnText   = document.getElementById('btn-text');
+    const btnSpinner= document.getElementById('btn-spinner');
+
+    let selectedFiles = [];
+
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      handleFiles(Array.from(e.dataTransfer.files));
+    });
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', () => handleFiles(Array.from(fileInput.files)));
+
+    function handleFiles(files) {
+      selectedFiles = [...selectedFiles, ...files.filter(f => f.name.toLowerCase().endsWith('.pdf'))];
+      renderFileList();
+    }
+
+    function renderFileList() {
+      if (!selectedFiles.length) {
+        fileList.classList.add('hidden');
+        submitBtn.classList.add('hidden');
+        return;
+      }
+      fileList.innerHTML = `
+        <h4>Selected (${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''})</h4>
+        <ul>
+          ${selectedFiles.map((f, i) => `
+            <li>
+              <span class="file-icon">📄</span>
+              <span class="file-name">${f.name}</span>
+              <span class="file-size">${(f.size/1024).toFixed(0)} KB</span>
+              <button type="button" class="remove-file" data-idx="${i}">✕</button>
+            </li>
+          `).join('')}
+        </ul>`;
+      fileList.classList.remove('hidden');
+      submitBtn.classList.remove('hidden');
+      fileList.querySelectorAll('.remove-file').forEach(btn =>
+        btn.addEventListener('click', () => { selectedFiles.splice(+btn.dataset.idx, 1); renderFileList(); })
+      );
+    }
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      if (!selectedFiles.length) return;
+      const dt = new DataTransfer();
+      selectedFiles.forEach(f => dt.items.add(f));
+      fileInput.files = dt.files;
+      btnText.textContent = 'Processing…';
+      btnSpinner.classList.remove('hidden');
+      submitBtn.disabled = true;
+      form.submit();
+    });
+  </script>
+</body>
+</html>

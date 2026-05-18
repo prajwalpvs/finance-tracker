@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FinanceTracker — Dashboard</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="dashboard">
+
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">📊</div>
+      <span class="logo-text grad-text">Finance</span>
+    </div>
+
+    <ul class="sidebar-nav">
+      <li><a href="#overview"     class="active"><span class="nav-icon">🏠</span> Overview</a></li>
+      <li><a href="#charts"               ><span class="nav-icon">📊</span> Charts</a></li>
+      <li><a href="#merchants"            ><span class="nav-icon">🏪</span> Merchants</a></li>
+      <li><a href="#tips"                 ><span class="nav-icon">💡</span> Tips</a></li>
+      <li><a href="#transactions"         ><span class="nav-icon">📋</span> Transactions</a></li>
+    </ul>
+
+    <div class="sidebar-actions">
+      <button class="btn-secondary" onclick="exportCSV()">⬇ Export CSV</button>
+      <a href="/" class="btn-outline">+ Upload More</a>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main class="main-content">
+
+    {% if stats.parse_errors %}
+    <div class="error-banner fade-in">
+      <strong>⚠ Parse warnings ({{ stats.parse_errors|length }}):</strong>
+      <ul>{% for err in stats.parse_errors %}<li>{{ err }}</li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+
+    <div class="parse-stats fade-in">
+      ✅ Extracted <strong>{{ stats.transaction_count }}</strong> transactions
+      from <strong>{{ stats.files_processed }}</strong> statement file(s)
+    </div>
+
+    <!-- Overview -->
+    <section id="overview">
+      <h2 class="section-title">
+        <span class="section-title-icon" style="background:rgba(124,58,237,.2)">🏠</span>
+        Overview
+      </h2>
+      <div class="stat-cards" id="stat-cards">
+        <div class="stat-card loading"></div>
+        <div class="stat-card loading"></div>
+        <div class="stat-card loading"></div>
+        <div class="stat-card loading"></div>
+      </div>
+    </section>
+
+    <!-- Charts -->
+    <section id="charts">
+      <h2 class="section-title">
+        <span class="section-title-icon" style="background:rgba(59,130,246,.2)">📊</span>
+        Spending Breakdown
+      </h2>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3>By Category</h3>
+          <div class="chart-container"><canvas id="pie-chart"></canvas></div>
+        </div>
+        <div class="chart-card chart-bar">
+          <h3>By Month</h3>
+          <div class="chart-container"><canvas id="bar-chart"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Merchants -->
+    <section id="merchants">
+      <h2 class="section-title">
+        <span class="section-title-icon" style="background:rgba(239,68,68,.2)">🏪</span>
+        Top Merchants
+      </h2>
+      <div class="table-card">
+        <table class="data-table" id="merchants-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Merchant</th>
+              <th>Visits</th>
+              <th>Total</th>
+              <th>Spend Bar</th>
+            </tr>
+          </thead>
+          <tbody id="merchants-body">
+            <tr><td colspan="5" class="loading-row">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Savings Tips -->
+    <section id="tips">
+      <h2 class="section-title">
+        <span class="section-title-icon" style="background:rgba(251,191,36,.2)">💡</span>
+        Savings Tips
+      </h2>
+      <div class="tips-grid" id="tips-grid">
+        <div class="tip-card loading"></div>
+        <div class="tip-card loading"></div>
+      </div>
+    </section>
+
+    <!-- Transactions -->
+    <section id="transactions">
+      <h2 class="section-title">
+        <span class="section-title-icon" style="background:rgba(16,185,129,.2)">📋</span>
+        All Transactions
+      </h2>
+      <div class="table-controls">
+        <input type="text" id="search-input" placeholder="🔍 Search transactions…" class="search-input" />
+        <select id="category-filter" class="filter-select">
+          <option value="">All Categories</option>
+        </select>
+        <select id="type-filter" class="filter-select">
+          <option value="">All Types</option>
+          <option value="expense">Expenses</option>
+          <option value="income">Income</option>
+        </select>
+        <select id="sort-select" class="filter-select">
+          <option value="date-desc">Date (Newest)</option>
+          <option value="date-asc">Date (Oldest)</option>
+          <option value="amount-desc">Amount ↓</option>
+          <option value="amount-asc">Amount ↑</option>
+          <option value="category">Category A–Z</option>
+        </select>
+      </div>
+      <div class="table-card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Category</th>
+              <th>Type</th>
+              <th style="text-align:right">Amount</th>
+            </tr>
+          </thead>
+          <tbody id="txn-body">
+            <tr><td colspan="5" class="loading-row">Loading…</td></tr>
+          </tbody>
+        </table>
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="/static/js/dashboard.js"></script>
+</body>
+</html>
