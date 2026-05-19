@@ -823,3 +823,109 @@ button { cursor: pointer; font-family: inherit; }
   .stat-cards { grid-template-columns: 1fr; }
   .table-controls { flex-direction: column; }
 }
+
+/* ===== Print / PDF ===== */
+@media print {
+  @page { margin: 18mm 14mm; size: A4; }
+
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+  body {
+    background: #fff !important;
+    background-image: none !important;
+    color: #111 !important;
+    font-size: 11px;
+  }
+
+  /* Hide interactive chrome */
+  .sidebar,
+  .table-controls,
+  .pagination,
+  .parse-stats,
+  .error-banner { display: none !important; }
+
+  /* Full-width single column */
+  .dashboard { display: block; }
+  .main-content { padding: 0; gap: 28px; }
+
+  /* Section spacing */
+  section { break-inside: avoid; margin-bottom: 24px; }
+
+  /* Cards — light background */
+  .stat-cards { grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .stat-card {
+    border: 1px solid #ddd !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+  .stat-card::before { background: #f8f8f8 !important; backdrop-filter: none !important; }
+  .stat-value { color: #111 !important; }
+  .stat-label { color: #555 !important; }
+  .stat-sub   { color: #777 !important; }
+
+  /* Charts — side by side */
+  .charts-grid { grid-template-columns: 1fr 1.5fr; gap: 12px; }
+  .chart-card {
+    border: 1px solid #ddd !important;
+    background: #f9f9f9 !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+  .chart-card h3 { color: #444 !important; }
+  .chart-container { height: 220px; }
+
+  /* Tables */
+  .table-card {
+    border: 1px solid #ddd !important;
+    background: #fff !important;
+    backdrop-filter: none !important;
+  }
+  .data-table th {
+    background: #f0f0f0 !important;
+    color: #444 !important;
+    border-bottom: 1px solid #ccc !important;
+  }
+  .data-table td {
+    color: #111 !important;
+    border-bottom: 1px solid #eee !important;
+  }
+  .data-table tbody tr:hover td { background: none !important; }
+
+  /* Badges */
+  .badge-expense { background: #fee2e2 !important; color: #b91c1c !important; border-color: #fca5a5 !important; }
+  .badge-income  { background: #dcfce7 !important; color: #15803d !important; border-color: #86efac !important; }
+
+  /* Tips */
+  .tips-grid { grid-template-columns: repeat(2, 1fr); }
+  .tip-card {
+    border: 1px solid #ddd !important;
+    background: #fffbeb !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+  .tip-message { color: #444 !important; }
+  .tip-stat-label { color: #777 !important; }
+
+  /* Merchants */
+  .rank-badge { background: #eee !important; color: #555 !important; }
+  .spend-bar { background: #e5e7eb !important; }
+
+  /* Section titles */
+  .section-title { color: #111 !important; }
+  .section-title-icon { backdrop-filter: none !important; }
+
+  /* Gradient text falls back to solid in print */
+  .grad-text,
+  .grad-text-green,
+  .grad-text-red,
+  .tip-category {
+    -webkit-text-fill-color: #111 !important;
+    background: none !important;
+    color: #111 !important;
+  }
+  .tip-stat-value.save { -webkit-text-fill-color: #15803d !important; background: none !important; color: #15803d !important; }
+  .amount-expense { color: #b91c1c !important; }
+  .amount-income  { color: #15803d !important; }
+}

@@ -27,6 +27,7 @@
 
     <div class="sidebar-actions">
       <button class="btn-secondary" onclick="exportCSV()">⬇ Export CSV</button>
+      <button class="btn-secondary" onclick="window.print()">🖨 Download PDF</button>
       <a href="/" class="btn-outline">+ Upload More</a>
     </div>
   </nav>
@@ -44,6 +45,9 @@
     <div class="parse-stats fade-in">
       ✅ Extracted <strong>{{ stats.transaction_count }}</strong> transactions
       from <strong>{{ stats.files_processed }}</strong> statement file(s)
+      {% if stats.ocr_transaction_count > 0 %}
+      — <span title="Transactions extracted via OCR from scanned PDFs">🔍 {{ stats.ocr_transaction_count }} via OCR</span>
+      {% endif %}
     </div>
 
     <!-- Overview -->

@@ -76,7 +76,8 @@ def upload():
             if 'no_text' in str(e):
                 parse_errors.append(
                     f'{file.filename}: No extractable text found. '
-                    'This may be a scanned image PDF — please use an OCR tool first.'
+                    'Scanned PDF detected but OCR is unavailable — '
+                    'install Tesseract and Poppler to enable automatic OCR.'
                 )
             else:
                 parse_errors.append(f'{file.filename}: {e}')
@@ -88,6 +89,7 @@ def upload():
 
     summary = build_summary(all_transactions)
     tips = savings_tips(summary)
+    ocr_count = sum(1 for t in all_transactions if t.get('_ocr'))
 
     data = {
         'transactions': all_transactions,
@@ -96,6 +98,7 @@ def upload():
         'parse_errors': parse_errors,
         'files_processed': files_processed,
         'transaction_count': len(all_transactions),
+        'ocr_transaction_count': ocr_count,
     }
     _save_data(data)
 
@@ -111,6 +114,7 @@ def dashboard():
         'files_processed': data.get('files_processed', 0),
         'transaction_count': data.get('transaction_count', 0),
         'parse_errors': data.get('parse_errors', []),
+        'ocr_transaction_count': data.get('ocr_transaction_count', 0),
     })
 
 

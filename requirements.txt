@@ -3,3 +3,6 @@ flask-cors
 pdfplumber
 python-dotenv
 pandas
+pytesseract
+pdf2image
+pillow

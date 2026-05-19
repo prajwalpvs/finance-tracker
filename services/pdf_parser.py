@@ -1,6 +1,23 @@
+import os
 import re
 import pdfplumber
 from datetime import datetime
+
+try:
+    import pytesseract
+    from pdf2image import convert_from_path
+    _OCR_AVAILABLE = True
+    # Windows default Tesseract path; override via TESSERACT_CMD env var
+    _TESS_CMD = os.environ.get(
+        'TESSERACT_CMD',
+        r'C:\Program Files\Tesseract-OCR\tesseract.exe',
+    )
+    if os.path.exists(_TESS_CMD):
+        pytesseract.pytesseract.tesseract_cmd = _TESS_CMD
+    else:
+        _OCR_AVAILABLE = False
+except ImportError:
+    _OCR_AVAILABLE = False
 
 
 # Regex patterns for various bank statement formats
@@ -122,9 +139,26 @@ def _parse_line(line: str, year_hint: int = None) -> dict | None:
     return None
 
 
+def _ocr_pdf(file_path: str) -> str:
+    """Render PDF pages to images and run Tesseract OCR on each."""
+    poppler_path = os.environ.get('POPPLER_PATH')
+    images = convert_from_path(
+        file_path,
+        dpi=300,
+        poppler_path=poppler_path or None,
+    )
+    parts = []
+    for img in images:
+        text = pytesseract.image_to_string(img, lang='eng')
+        if text:
+            parts.append(text)
+    return '\n'.join(parts)
+
+
 def parse_pdf(file_path: str) -> list:
     transactions = []
     year_hint = None
+    used_ocr = False
 
     try:
         with pdfplumber.open(file_path) as pdf:
@@ -137,18 +171,24 @@ def parse_pdf(file_path: str) -> list:
                 if text:
                     full_text += text + '\n'
 
+        if not full_text.strip():
+            if not _OCR_AVAILABLE:
+                raise ValueError('no_text')
+            full_text = _ocr_pdf(file_path)
+            used_ocr = True
             if not full_text.strip():
                 raise ValueError('no_text')
 
-            # Try to extract a year from the document
-            year_match = re.search(r'\b(20\d{2})\b', full_text)
-            if year_match:
-                year_hint = int(year_match.group(1))
+        # Try to extract a year from the document
+        year_match = re.search(r'\b(20\d{2})\b', full_text)
+        if year_match:
+            year_hint = int(year_match.group(1))
 
-            for line in full_text.split('\n'):
-                txn = _parse_line(line, year_hint)
-                if txn:
-                    transactions.append(txn)
+        for line in full_text.split('\n'):
+            txn = _parse_line(line, year_hint)
+            if txn:
+                txn['_ocr'] = used_ocr
+                transactions.append(txn)
 
     except ValueError:
         raise
