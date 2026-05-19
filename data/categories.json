@@ -1,5 +1,5 @@
 {
-  "Food & Dining": [
+  "Dining Out": [
     "uber eats", "doordash", "grubhub", "starbucks", "mcdonald", "chipotle",
     "restaurant", "cafe", "pizza", "sushi", "taco", "burger", "diner",
     "subway", "wendy", "chick-fil", "popeyes", "five guys", "shake shack",
@@ -7,14 +7,15 @@
     "dunkin", "tim horton", "smoothie king", "jamba juice", "sweetgreen",
     "olive garden", "applebee", "chili", "ihop", "denny", "waffle house",
     "red lobster", "outback", "cheesecake factory", "dining", "eatery",
-    "kitchen", "grill", "bistro", "bar & grill", "food", "bakery"
+    "bistro", "bar & grill", "bakery", "boba", "ramen", "bbq", "steakhouse"
   ],
   "Groceries": [
     "whole foods", "trader joe", "walmart", "costco", "kroger", "safeway",
     "aldi", "wegmans", "publix", "h-e-b", "meijer", "stop & shop",
     "giant", "food lion", "sprouts", "fresh market", "market basket",
     "shoprite", "harris teeter", "winn-dixie", "save-a-lot", "lidl",
-    "grocery", "supermarket", "food mart", "fresh fare"
+    "grocery", "supermarket", "food mart", "fresh fare", "food king",
+    "food bazaar", "food city", "piggly wiggly", "stater bros"
   ],
   "Transport": [
     "uber", "lyft", "shell", "exxon", "chevron", "bp", "parking",
@@ -22,12 +23,11 @@
     "speedway", "circle k", "wawa", "kwik trip", "pilot", "flying j",
     "amtrak", "greyhound", "taxi", "cab", "toll", "ez pass",
     "autozone", "advance auto", "jiffy lube", "valvoline", "pep boys",
-    "midas", "firestone", "discount tire", "goodyear", "car wash",
-    "enterprise", "hertz", "avis", "budget rent", "zipcar"
+    "midas", "firestone", "discount tire", "goodyear", "car wash", "zipcar"
   ],
   "Shopping": [
     "amazon", "target", "best buy", "ebay", "etsy", "macy", "nordstrom",
-    "walmart", "costco", "home depot", "lowe", "ikea", "tj maxx",
+    "home depot", "lowe", "ikea", "tj maxx",
     "marshalls", "ross", "burlington", "gap", "old navy", "banana republic",
     "h&m", "zara", "uniqlo", "forever 21", "express", "american eagle",
     "hollister", "abercrombie", "bath & body", "victoria secret",
@@ -76,8 +76,8 @@
     "spirit airline", "frontier", "alaska air", "hotel", "marriott",
     "hilton", "hyatt", "ihg", "best western", "motel 6", "holiday inn",
     "airbnb", "vrbo", "expedia", "booking.com", "hotels.com", "kayak",
-    "priceline", "trivago", "travelocity", "orbitz", "enterprise car",
-    "national car", "avis rent", "hertz rent", "tsa precheck",
+    "priceline", "trivago", "travelocity", "orbitz", "enterprise rent",
+    "hertz rent", "avis rent", "national car", "tsa precheck",
     "global entry", "travel insurance", "passport", "luggage",
     "suitcase", "backpack"
   ],

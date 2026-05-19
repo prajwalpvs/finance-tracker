@@ -3,6 +3,7 @@ import json
 import uuid
 import csv
 import io
+import time
 from flask import Flask, render_template, request, redirect, url_for, jsonify, session, send_file, flash
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
@@ -18,6 +19,19 @@ CORS(app)
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'uploads')
 os.makedirs(DATA_DIR, exist_ok=True)
+
+
+def _purge_stale_sessions(max_age_seconds: int = 86400):
+    now = time.time()
+    for fname in os.listdir(DATA_DIR):
+        if not fname.endswith('.json'):
+            continue
+        fpath = os.path.join(DATA_DIR, fname)
+        try:
+            if now - os.path.getmtime(fpath) > max_age_seconds:
+                os.remove(fpath)
+        except OSError:
+            pass
 
 
 def _session_data_path() -> str:
@@ -48,6 +62,7 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload():
+    _purge_stale_sessions()
     files = request.files.getlist('pdfs')
     if not files or all(f.filename == '' for f in files):
         flash('No files selected.')

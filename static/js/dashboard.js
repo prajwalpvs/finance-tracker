@@ -10,7 +10,7 @@ const CHART_COLORS = [
 ];
 
 const CAT_COLORS = {
-  'Food & Dining':  '#fb923c',
+  'Dining Out':     '#fb923c',
   'Groceries':      '#4ade80',
   'Transport':      '#60a5fa',
   'Shopping':       '#e879f9',
@@ -187,14 +187,14 @@ function renderBarChart(byMonth) {
       },
       scales: {
         x: {
-          grid: { color: 'rgba(255,255,255,.04)', drawBorder: false },
+          grid: { color: 'rgba(255,255,255,.04)', border: { display: false } },
           ticks: { color: '#64748b', font: { size: 11, weight: '600' } },
         },
         y: {
-          grid: { color: 'rgba(255,255,255,.04)', drawBorder: false },
+          grid: { color: 'rgba(255,255,255,.04)', border: { display: false } },
           ticks: {
             color: '#64748b', font: { size: 11, weight: '600' },
-            callback: v => `$${(v/1000).toFixed(0)}k`,
+            callback: v => v >= 1000 ? `$${(v/1000).toFixed(1)}k` : `$${v}`,
           },
         },
       },

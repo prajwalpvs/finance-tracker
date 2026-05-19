@@ -129,7 +129,7 @@ def savings_tips(summary: dict) -> list:
         })
 
     # Tip 4: dining out suggestion
-    dining = by_category.get('Food & Dining', 0)
+    dining = by_category.get('Dining Out', 0)
     groceries = by_category.get('Groceries', 0)
     if dining > 0 and groceries > 0 and dining > groceries:
         savings = (dining - groceries) * 0.20
@@ -139,7 +139,7 @@ def savings_tips(summary: dict) -> list:
             'current_spend': round(dining, 2),
             'suggested_cut': round(savings, 2),
             'monthly_savings': round(savings / _months_in_summary(summary), 2),
-            'icon': '🍽️',
+            'icon': '🍽',
         })
 
     # Tip 5: transport tip
@@ -164,7 +164,7 @@ def _months_in_summary(summary: dict) -> int:
 
 def _category_icon(category: str) -> str:
     icons = {
-        'Food & Dining': '🍔',
+        'Dining Out': '🍔',
         'Groceries': '🛒',
         'Transport': '🚗',
         'Shopping': '🛍️',
