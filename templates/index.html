@@ -39,7 +39,7 @@
         <div class="drop-zone" id="drop-zone">
           <div class="drop-icon-wrap">📄</div>
           <p class="drop-title">Drop your PDF statements here</p>
-          <p class="drop-sub">or <button type="button" class="browse-btn" onclick="document.getElementById('file-input').click()">click to browse</button></p>
+          <p class="drop-sub">or <button type="button" class="browse-btn">click to browse</button></p>
           <p class="drop-hint">Chase · Citi · Bank of America · and most bank formats</p>
         </div>
 
@@ -91,11 +91,16 @@
       dropZone.classList.remove('drag-over');
       handleFiles(Array.from(e.dataTransfer.files));
     });
-    dropZone.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', () => handleFiles(Array.from(fileInput.files)));
+    dropZone.addEventListener('click', e => {
+      if (!e.target.classList.contains('browse-btn')) return;
+      fileInput.click();
+    });
+    fileInput.addEventListener('change', () => { handleFiles(Array.from(fileInput.files)); fileInput.value = ''; });
 
     function handleFiles(files) {
-      selectedFiles = [...selectedFiles, ...files.filter(f => f.name.toLowerCase().endsWith('.pdf'))];
+      const existing = new Set(selectedFiles.map(f => f.name + f.size));
+      const newFiles = files.filter(f => f.name.toLowerCase().endsWith('.pdf') && !existing.has(f.name + f.size));
+      selectedFiles = [...selectedFiles, ...newFiles];
       renderFileList();
     }
 

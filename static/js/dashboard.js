@@ -3,12 +3,6 @@
 
 const PAGE_SIZE = 50;
 
-const CHART_COLORS = [
-  '#a78bfa','#60a5fa','#f87171','#4ade80','#fbbf24',
-  '#34d399','#fb923c','#e879f9','#38bdf8','#facc15',
-  '#f472b6','#818cf8','#2dd4bf',
-];
-
 const CAT_COLORS = {
   'Dining Out':     '#fb923c',
   'Groceries':      '#4ade80',
@@ -319,7 +313,7 @@ function renderTable() {
       ? 'linear-gradient(135deg,#ef4444,#f97316)'
       : 'linear-gradient(135deg,#10b981,#06b6d4)';
     return `
-      <tr class="fade-in" style="animation-delay:${Math.min(i,.2) * .03}s">
+      <tr class="fade-in" style="animation-delay:${Math.min(i * .03, .2)}s">
         <td style="color:var(--muted);font-size:12px;white-space:nowrap">${fmt_date(t.date)}</td>
         <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500" title="${esc(t.description)}">${esc(t.description)}</td>
         <td>
@@ -328,7 +322,7 @@ function renderTable() {
           </span>
         </td>
         <td><span class="badge badge-${t.type}">${t.type}</span></td>
-        <td style="text-align:right;font-weight:700;background:${amtGrad};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">
+        <td class="amount-${t.type}" style="text-align:right;font-weight:700;background:${amtGrad};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">
           ${t.type === 'expense' ? '-' : '+'}${fmt_money(t.amount)}
         </td>
       </tr>`;

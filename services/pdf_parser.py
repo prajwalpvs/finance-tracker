@@ -21,26 +21,54 @@ except ImportError:
 
 
 # Regex patterns for various bank statement formats
+# Order matters — two-date formats must come before single-date to avoid mismatch
 PATTERNS = [
+    # Discover: MM/DD MM/DD DESCRIPTION AMOUNT  (trans date + post date, no year)
+    {
+        'name': 'discover',
+        're': re.compile(
+            r'^(?P<date>\d{2}/\d{2})\s+\d{2}/\d{2}\s+(?P<desc>.+?)\s+(?P<amount>-?[\d,]+\.\d{2}CR?)\s*$',
+            re.IGNORECASE,
+        )
+    },
+    # BoA credit card: MM/DD/YY MM/DD/YY DESCRIPTION AMOUNT  (trans + post date)
+    {
+        'name': 'boa_cc',
+        're': re.compile(
+            r'^(?P<date>\d{2}/\d{2}/\d{2,4})\s+\d{2}/\d{2}/\d{2,4}\s+(?P<desc>.+?)\s+(?P<amount>-?[\d,]+\.\d{2}CR?)\s*$',
+            re.IGNORECASE,
+        )
+    },
+    # Zolve / ISO date: YYYY-MM-DD DESCRIPTION AMOUNT
+    {
+        'name': 'zolve',
+        're': re.compile(
+            r'^(?P<date>\d{4}-\d{2}-\d{2})\s+(?P<desc>.+?)\s+\$?(?P<amount>-?[\d,]+\.\d{2}CR?)\s*$',
+            re.IGNORECASE,
+        )
+    },
     # Chase: 01/15 SOME MERCHANT 123.45
     {
         'name': 'chase',
         're': re.compile(
-            r'^(?P<date>\d{2}/\d{2})\s+(?P<desc>.+?)\s+(?P<amount>-?\$?[\d,]+\.\d{2})\s*$'
+            r'^(?P<date>\d{2}/\d{2})\s+(?P<desc>.+?)\s+(?P<amount>-?\$?[\d,]+\.\d{2}CR?)\s*$',
+            re.IGNORECASE,
         )
     },
     # Citi: 01/15/24 SOME MERCHANT 123.45
     {
         'name': 'citi',
         're': re.compile(
-            r'^(?P<date>\d{2}/\d{2}/\d{2,4})\s+(?P<desc>.+?)\s+(?P<amount>-?\$?[\d,]+\.\d{2})\s*$'
+            r'^(?P<date>\d{2}/\d{2}/\d{2,4})\s+(?P<desc>.+?)\s+(?P<amount>-?\$?[\d,]+\.\d{2}CR?)\s*$',
+            re.IGNORECASE,
         )
     },
     # Bank of America / generic: 01/15/2024 SOME MERCHANT $123.45
     {
         'name': 'boa',
         're': re.compile(
-            r'^(?P<date>\d{2}/\d{2}/\d{2,4})\s+(?P<desc>.+?)\s+\$?(?P<amount>-?[\d,]+\.\d{2})\s*$'
+            r'^(?P<date>\d{2}/\d{2}/\d{2,4})\s+(?P<desc>.+?)\s+\$?(?P<amount>-?[\d,]+\.\d{2}CR?)\s*$',
+            re.IGNORECASE,
         )
     },
     # Parentheses for negatives: 01/15 MERCHANT (123.45)
@@ -64,27 +92,39 @@ SKIP_PATTERNS = re.compile(
     r'minimum payment|payment due|credit limit|available credit|'
     r'statement period|account number|routing number|page \d|'
     r'date\s+description\s+amount|transaction\s+date|posting\s+date|'
-    r'beginning balance|ending balance|total\s+fees|total\s+interest)',
+    r'trans\.\s*date|post\.\s*date|reference\s+number|'
+    r'beginning balance|ending balance|total\s+fees|total\s+interest|'
+    r'cashback\s+bonus|rewards\s+summary|total\s+transactions)',
     re.IGNORECASE
 )
 
 PAYMENT_PATTERN = re.compile(
     r'(payment\s+thank\s+you|online\s+payment|autopay|payment\s+received|'
-    r'payment\s+-\s+thank|direct\s+deposit|payroll|ach\s+deposit)',
+    r'payment\s+-\s+thank|direct\s+deposit|payroll|ach\s+deposit|'
+    r'discover\s+payment|zolve\s+payment|bank\s+of\s+america\s+payment|'
+    r'internet\s+payment|mobile\s+payment|e-payment)',
     re.IGNORECASE
 )
 
 
-def _normalize_amount(raw: str, is_parens: bool = False) -> float:
-    clean = raw.replace('$', '').replace(',', '').strip()
+def _normalize_amount(raw: str, is_parens: bool = False) -> tuple[float, bool]:
+    """Returns (amount, is_credit). CR suffix means credit (income)."""
+    is_cr = raw.upper().endswith('CR')
+    clean = raw.upper().rstrip('CR').replace('$', '').replace(',', '').strip()
     val = float(clean)
     if is_parens:
         val = -abs(val)
-    return val
+    return val, is_cr
 
 
 def _normalize_date(raw: str, year_hint: int = None) -> str:
     raw = raw.strip()
+    # ISO: YYYY-MM-DD (Zolve)
+    for fmt in ('%Y-%m-%d',):
+        try:
+            return datetime.strptime(raw, fmt).strftime('%Y-%m-%d')
+        except ValueError:
+            pass
     for fmt in ('%m/%d/%Y', '%m/%d/%y', '%m-%d-%Y', '%m-%d-%y'):
         try:
             return datetime.strptime(raw, fmt).strftime('%Y-%m-%d')
@@ -101,10 +141,10 @@ def _normalize_date(raw: str, year_hint: int = None) -> str:
     return raw
 
 
-def _detect_type(description: str, amount: float) -> str:
+def _detect_type(description: str) -> str:
     if PAYMENT_PATTERN.search(description):
         return 'income'
-    return 'income' if amount < 0 else 'expense'
+    return 'expense'
 
 
 def _parse_line(line: str, year_hint: int = None) -> dict | None:
@@ -121,13 +161,16 @@ def _parse_line(line: str, year_hint: int = None) -> dict | None:
         try:
             is_parens = ')' in line and '(' in line
             raw_amount = m.group('amount')
-            amount = _normalize_amount(raw_amount, is_parens)
+            amount, is_cr = _normalize_amount(raw_amount, is_parens)
             date_str = _normalize_date(m.group('date'), year_hint)
             desc = m.group('desc').strip()
-            # Skip very short or numeric-only descriptions
             if len(desc) < 3 or re.match(r'^[\d\s\-\.]+$', desc):
                 continue
-            txn_type = _detect_type(desc, amount)
+            # CR suffix or negative amount = credit/income
+            if is_cr or amount < 0:
+                txn_type = 'income'
+            else:
+                txn_type = _detect_type(desc)
             return {
                 'date': date_str,
                 'description': desc,

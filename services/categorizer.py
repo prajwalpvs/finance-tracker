@@ -27,7 +27,6 @@ def categorize(description: str) -> str:
     return 'Other'
 
 
-def categorize_all(transactions: list) -> list:
+def categorize_all(transactions: list) -> None:
     for txn in transactions:
         txn['category'] = categorize(txn.get('description', ''))
-    return transactions

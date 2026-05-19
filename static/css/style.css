@@ -71,15 +71,6 @@ button { cursor: pointer; font-family: inherit; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.2); }
 
-/* ===== Glassmorphism card base ===== */
-.glass {
-  background: var(--surface);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-
 /* ===== Gradient text ===== */
 .grad-text {
   background: linear-gradient(135deg, #a78bfa 0%, #60a5fa 50%, #4ade80 100%);
@@ -624,8 +615,7 @@ button { cursor: pointer; font-family: inherit; }
 .data-table tbody tr:hover td { background: rgba(255,255,255,.03); }
 .loading-row { text-align: center; color: var(--muted); padding: 40px !important; }
 
-.amount-expense { font-weight: 700; }
-.amount-income  { font-weight: 700; }
+.amount-expense, .amount-income { font-weight: 700; }
 
 /* Category badges */
 .badge {
@@ -926,6 +916,6 @@ button { cursor: pointer; font-family: inherit; }
     color: #111 !important;
   }
   .tip-stat-value.save { -webkit-text-fill-color: #15803d !important; background: none !important; color: #15803d !important; }
-  .amount-expense { color: #b91c1c !important; }
-  .amount-income  { color: #15803d !important; }
+  .amount-expense { color: #b91c1c !important; -webkit-text-fill-color: #b91c1c !important; background: none !important; }
+  .amount-income  { color: #15803d !important; -webkit-text-fill-color: #15803d !important; background: none !important; }
 }
