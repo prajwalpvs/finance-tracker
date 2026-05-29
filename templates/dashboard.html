@@ -19,6 +19,7 @@
     <ul class="sidebar-nav">
       <li><a href="#overview"     class="active"><span class="nav-icon">🏠</span> Overview</a></li>
       <li><a href="#charts"               ><span class="nav-icon">📊</span> Charts</a></li>
+      <li><a href="#yoy"                  ><span class="nav-icon">📅</span> Year vs Year</a></li>
       <li><a href="#merchants"            ><span class="nav-icon">🏪</span> Merchants</a></li>
       <li><a href="#tips"                 ><span class="nav-icon">💡</span> Tips</a></li>
       <li><a href="#transactions"         ><span class="nav-icon">📋</span> Transactions</a></li>
@@ -27,6 +28,7 @@
     <div class="sidebar-actions">
       <button class="btn-secondary" onclick="exportCSV()">⬇ Export CSV</button>
       <button class="btn-secondary" onclick="window.print()">🖨 Download PDF</button>
+      <button class="btn-secondary" onclick="recategorizeAll()" id="recat-btn">↺ Re-categorize</button>
       <a href="/" class="btn-outline">+ Upload More</a>
     </div>
   </nav>
@@ -82,6 +84,18 @@
       <div class="chart-card chart-line" style="margin-top:20px">
         <h3>Daily Spending Trend</h3>
         <div class="chart-container" style="height:200px"><canvas id="line-chart"></canvas></div>
+      </div>
+    </section>
+
+    <!-- Year-over-Year -->
+    <section id="yoy">
+      <h2 class="section-title">
+        <span class="section-title-icon" style="background:rgba(16,185,129,.2)">📅</span>
+        Year-over-Year Spending
+      </h2>
+      <div class="chart-card chart-yoy">
+        <h3>Monthly Spend by Year</h3>
+        <div class="chart-container" style="height:300px"><canvas id="yoy-chart"></canvas></div>
       </div>
     </section>
 

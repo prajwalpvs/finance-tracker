@@ -203,6 +203,11 @@
     "ebay",
     "etsy",
     "macy",
+    "back market",
+    "paypal",
+    "square",
+    "apple.com",
+    "apple itunes",
     "nordstrom",
     "home depot",
     "lowe",
@@ -422,6 +427,8 @@
     "water",
     "gas bill",
     "internet",
+    "phone",
+    "wireless",
     "verizon",
     "at&t",
     "t-mobile",
@@ -723,6 +730,12 @@
   "Other": [
     "atm payment",
     "usps",
-    "post office"
+    "post office",
+    "cash rewards",
+    "statement credit",
+    "refund",
+    "government",
+    "fee",
+    "charge"
   ]
 }

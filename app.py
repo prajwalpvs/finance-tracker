@@ -9,7 +9,7 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
 from services.pdf_parser import parse_pdf
-from services.categorizer import categorize_all
+from services.categorizer import categorize_all, categorize
 from services.analyzer import build_summary, savings_tips
 
 app = Flask(__name__)
@@ -167,6 +167,52 @@ def api_export():
         as_attachment=True,
         download_name='transactions.csv',
     )
+
+
+@app.route('/api/update-category', methods=['POST'])
+def update_category():
+    data = _load_data()
+    if not data:
+        return jsonify({'error': 'No data'}), 404
+
+    body = request.json or {}
+    txn_date = body.get('date')
+    txn_desc = body.get('description')
+    txn_amount = body.get('amount')
+    new_cat = body.get('category', '').strip()
+
+    if not new_cat:
+        return jsonify({'error': 'Missing category'}), 400
+
+    updated = 0
+    for txn in data['transactions']:
+        if (txn.get('date') == txn_date
+                and txn.get('description') == txn_desc
+                and abs(txn.get('amount', 0) - float(txn_amount or 0)) < 0.01):
+            txn['category'] = new_cat
+            updated += 1
+
+    if updated:
+        data['summary'] = build_summary(data['transactions'])
+        data['tips'] = savings_tips(data['summary'])
+        _save_data(data)
+
+    return jsonify({'ok': True, 'updated': updated})
+
+
+@app.route('/api/recategorize', methods=['POST'])
+def recategorize():
+    data = _load_data()
+    if not data:
+        return jsonify({'error': 'No data'}), 404
+
+    for txn in data['transactions']:
+        txn['category'] = categorize(txn.get('description', ''))
+
+    data['summary'] = build_summary(data['transactions'])
+    data['tips'] = savings_tips(data['summary'])
+    _save_data(data)
+    return jsonify({'ok': True, 'count': len(data['transactions'])})
 
 
 @app.route('/api/reset-session', methods=['POST'])

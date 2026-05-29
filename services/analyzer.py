@@ -20,6 +20,7 @@ def build_summary(transactions: list) -> dict:
 
     total_spent = 0.0
     total_income = 0.0
+    total_transfers = 0.0
     by_category = defaultdict(float)
     by_month = defaultdict(float)
     merchant_totals = defaultdict(float)
@@ -33,19 +34,23 @@ def build_summary(transactions: list) -> dict:
         date = txn.get('date', '')
         desc = txn.get('description', 'Unknown')
 
-        if txn_type == 'expense':
+        if txn_type == 'transfer':
+            total_transfers += amount
+        elif txn_type == 'expense':
             total_spent += amount
             by_category[category] += amount
         else:
             total_income += amount
 
-        month = date[:7] if date else 'Unknown'
-        if txn_type == 'expense':
+        # Only valid YYYY-MM month keys in spending chart
+        month = date[:7] if date and len(date) >= 7 else None
+        if month and re.match(r'^\d{4}-\d{2}$', month) and txn_type == 'expense':
             by_month[month] += amount
 
-        merchant_key = _normalize_merchant(desc)
-        merchant_totals[merchant_key] += amount
-        merchant_counts[merchant_key] += 1
+        if txn_type != 'transfer':
+            merchant_key = _normalize_merchant(desc)
+            merchant_totals[merchant_key] += amount
+            merchant_counts[merchant_key] += 1
 
         if date:
             dates.append(date)
@@ -60,11 +65,25 @@ def build_summary(transactions: list) -> dict:
     )[:10]
 
     expense_count = sum(1 for t in transactions if t.get('type') == 'expense')
+    transfer_count = sum(1 for t in transactions if t.get('type') == 'transfer')
     months_count = max(len(by_month), 1)
+
+    # MoM trend: compare last two valid months
+    sorted_months = sorted(by_month.keys())
+    mom_pct = None
+    if len(sorted_months) >= 2:
+        last_v = by_month[sorted_months[-1]]
+        prev_v = by_month[sorted_months[-2]]
+        if prev_v:
+            mom_pct = round((last_v - prev_v) / prev_v * 100, 1)
+
+    # Valid date range (exclude None/malformed)
+    valid_dates = [d for d in dates if d and re.match(r'^\d{4}-\d{2}-\d{2}$', d)]
 
     return {
         'total_spent': round(total_spent, 2),
         'total_income': round(total_income, 2),
+        'total_transfers': round(total_transfers, 2),
         'net': round(total_income - total_spent, 2),
         'avg_monthly_spend': round(total_spent / months_count, 2),
         'avg_transaction': round(total_spent / max(expense_count, 1), 2),
@@ -72,9 +91,11 @@ def build_summary(transactions: list) -> dict:
         'by_month': dict(sorted(by_month.items())),
         'top_merchants': top_merchants,
         'transaction_count': len(transactions),
+        'transfer_count': transfer_count,
+        'mom_pct': mom_pct,
         'date_range': {
-            'start': min(dates) if dates else None,
-            'end': max(dates) if dates else None,
+            'start': min(valid_dates) if valid_dates else None,
+            'end': max(valid_dates) if valid_dates else None,
         },
     }
 

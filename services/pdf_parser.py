@@ -101,11 +101,20 @@ SKIP_PATTERNS = re.compile(
     re.IGNORECASE
 )
 
+TRANSFER_PATTERN = re.compile(
+    r'(internet\s+payment|online\s+payment|mobile\s+payment|autopay|'
+    r'payment\s+from\s+chk|payment\s+from\s+sav|online\s+transfer|'
+    r'transfer\s+to|transfer\s+from|bank\s+transfer|bill\s+pay|'
+    r'zelle\s+pay|cash\s+app\s+pay|venmo\s+pay|wire\s+transfer)',
+    re.IGNORECASE
+)
+
 PAYMENT_PATTERN = re.compile(
-    r'(payment\s+thank\s+you|online\s+payment|autopay|payment\s+received|'
-    r'payment\s+-\s+thank|direct\s+deposit|payroll|ach\s+deposit|'
+    r'(payment\s+thank\s+you|payment\s+received|payment\s+-\s+thank|'
+    r'direct\s+deposit|payroll|ach\s+deposit|'
+    r'cash\s+rewards\s+statement|statement\s+credit|tax\s+refund|'
     r'discover\s+payment|zolve\s+payment|bank\s+of\s+america\s+payment|'
-    r'internet\s+payment|mobile\s+payment|e-payment)',
+    r'e-payment)',
     re.IGNORECASE
 )
 
@@ -120,31 +129,51 @@ def _normalize_amount(raw: str, is_parens: bool = False) -> tuple[float, bool]:
     return val, is_cr
 
 
-def _normalize_date(raw: str, year_hint: int = None) -> str:
+def _normalize_date(raw: str, year_hint: int = None) -> str | None:
     raw = raw.strip()
-    # ISO: YYYY-MM-DD (Zolve)
+    now = datetime.now()
+    max_future = now.replace(year=now.year + 1)  # reject > ~1 year ahead
+
     for fmt in ('%Y-%m-%d',):
         try:
-            return datetime.strptime(raw, fmt).strftime('%Y-%m-%d')
+            dt = datetime.strptime(raw, fmt)
+            if dt > max_future:
+                return None
+            return dt.strftime('%Y-%m-%d')
         except ValueError:
             pass
+
     for fmt in ('%m/%d/%Y', '%m/%d/%y', '%m-%d-%Y', '%m-%d-%y'):
         try:
-            return datetime.strptime(raw, fmt).strftime('%Y-%m-%d')
+            dt = datetime.strptime(raw, fmt)
+            if dt > max_future:
+                return None
+            return dt.strftime('%Y-%m-%d')
         except ValueError:
             pass
-    # MM/DD without year
+
+    # MM/DD without year — try year_hint then adjacent years (handles Feb 29 on non-leap)
     for fmt in ('%m/%d', '%m-%d'):
         try:
             dt = datetime.strptime(raw, fmt)
-            year = year_hint or datetime.now().year
-            return dt.replace(year=year).strftime('%Y-%m-%d')
         except ValueError:
-            pass
-    return raw
+            continue
+        base_year = year_hint or now.year
+        for y in [base_year, base_year - 1, base_year + 1]:
+            try:
+                result = dt.replace(year=y)
+                if result > max_future:
+                    continue
+                return result.strftime('%Y-%m-%d')
+            except ValueError:
+                continue
+
+    return None
 
 
 def _detect_type(description: str) -> str:
+    if TRANSFER_PATTERN.search(description):
+        return 'transfer'
     if PAYMENT_PATTERN.search(description):
         return 'income'
     return 'expense'
@@ -172,6 +201,8 @@ def _parse_line(line: str, year_hint: int = None) -> dict | None:
             raw_amount = m.group('amount')
             amount, is_cr = _normalize_amount(raw_amount, is_parens)
             date_str = _normalize_date(m.group('date'), year_hint)
+            if not date_str:
+                continue
             desc = m.group('desc').strip()
             # Strip trailing bank reference/account codes (4+ digit sequences at end)
             desc = re.sub(r'(\s+\d{3,})+\s*$', '', desc).strip()

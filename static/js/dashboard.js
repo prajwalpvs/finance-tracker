@@ -24,12 +24,19 @@ const CAT_COLORS = {
   'Other':          '#64748b',
 };
 
+const ALL_CATEGORIES = [
+  'Dining Out','Groceries','Transport','Shopping','Entertainment',
+  'Subscriptions','Utilities','Health','Travel','Rent & Housing',
+  'Fitness','Education','Other',
+];
+
 let allTransactions  = [];
 let filteredTransactions = [];
 let currentPage = 1;
 let pieChart = null;
 let barChart = null;
 let lineChart = null;
+let yoyChart  = null;
 
 document.addEventListener('DOMContentLoaded', init);
 
@@ -39,13 +46,15 @@ async function init() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
-    allTransactions      = data.transactions || [];
+    allTransactions = data.transactions || [];
+    allTransactions.forEach((t, i) => t._idx = i);
     filteredTransactions = [...allTransactions];
 
     renderStatCards(data.summary);
     renderPieChart(data.summary.by_category);
     renderBarChart(data.summary.by_month);
     renderLineChart(allTransactions);
+    renderYoYChart(data.summary.by_month);
     renderMerchants(data.summary.top_merchants);
     renderTips(data.tips);
     populateCategoryFilter();
@@ -67,26 +76,40 @@ function renderStatCards(s) {
   const rangeStr = dateRange.start
     ? `${fmt_date(dateRange.start)} – ${fmt_date(dateRange.end)}`
     : 'N/A';
-  const monthCount = Object.keys(s.by_month || {}).length;
+  const validMonths = Object.keys(s.by_month || {}).filter(k => /^\d{4}-\d{2}$/.test(k));
+  const monthCount = validMonths.length;
   const avgMonthly = s.avg_monthly_spend != null
     ? s.avg_monthly_spend
     : +(s.total_spent / Math.max(monthCount, 1)).toFixed(2);
-  const avgTxn = s.avg_transaction != null
-    ? s.avg_transaction
-    : 0;
+  const avgTxn = s.avg_transaction != null ? s.avg_transaction : 0;
+
+  // MoM trend arrow
+  let momHtml = '';
+  if (s.mom_pct != null) {
+    const up = s.mom_pct > 0;
+    const arrow = up ? '▲' : '▼';
+    const color = up ? 'var(--red)' : 'var(--green)';
+    momHtml = ` · <span style="color:${color}">${arrow} ${Math.abs(s.mom_pct)}% vs prev mo</span>`;
+  }
+
+  // Transfer note
+  const xferHtml = (s.total_transfers > 0)
+    ? `<div class="stat-sub" style="margin-top:4px;color:var(--muted)">${fmt_money(s.total_transfers)} in transfers excluded (${s.transfer_count || 0}×)</div>`
+    : '';
 
   document.getElementById('stat-cards').innerHTML = `
     <div class="stat-card card-spent fade-in" style="animation-delay:.05s">
       <div class="stat-icon">💸</div>
       <div class="stat-label">Total Spent</div>
       <div class="stat-value grad-text-red">${fmt_money(s.total_spent)}</div>
-      <div class="stat-sub">${s.transaction_count} transactions · avg ${fmt_money(avgTxn)}/txn</div>
+      <div class="stat-sub">${s.transaction_count} transactions · avg ${fmt_money(avgTxn)}/txn${momHtml}</div>
+      ${xferHtml}
     </div>
     <div class="stat-card card-income fade-in" style="animation-delay:.1s">
       <div class="stat-icon">💰</div>
-      <div class="stat-label">Total Income</div>
+      <div class="stat-label">True Income</div>
       <div class="stat-value grad-text-green">${fmt_money(s.total_income)}</div>
-      <div class="stat-sub">Credits & deposits</div>
+      <div class="stat-sub">Deposits & credits (transfers excluded)</div>
     </div>
     <div class="stat-card card-net fade-in" style="animation-delay:.15s">
       <div class="stat-icon">${net >= 0 ? '📈' : '📉'}</div>
@@ -94,7 +117,7 @@ function renderStatCards(s) {
       <div class="stat-value" style="background:${net >= 0 ? 'linear-gradient(135deg,#10b981,#06b6d4)' : 'linear-gradient(135deg,#ef4444,#f97316)'};-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">
         ${net >= 0 ? '+' : ''}${fmt_money(net)}
       </div>
-      <div class="stat-sub">Income minus expenses</div>
+      <div class="stat-sub">True income minus expenses</div>
     </div>
     <div class="stat-card card-range fade-in" style="animation-delay:.2s">
       <div class="stat-icon">📅</div>
@@ -291,6 +314,153 @@ function renderLineChart(transactions) {
   });
 }
 
+// ---- Year-over-Year Chart ----
+function renderYoYChart(byMonth) {
+  const canvas = document.getElementById('yoy-chart');
+  if (!canvas) return;
+
+  const yearData = {};
+  for (const [key, val] of Object.entries(byMonth || {})) {
+    const m = key.match(/^(\d{4})-(\d{2})$/);
+    if (!m) continue;
+    const year = m[1];
+    const mo = parseInt(m[2], 10) - 1;
+    if (!yearData[year]) yearData[year] = new Array(12).fill(0);
+    yearData[year][mo] = val;
+  }
+
+  const years = Object.keys(yearData).sort();
+  if (!years.length) {
+    canvas.parentElement.innerHTML = '<p style="color:var(--muted);text-align:center;padding:40px 0">No data.</p>';
+    return;
+  }
+
+  const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const YEAR_COLORS  = ['#a78bfa','#60a5fa','#4ade80','#fb923c','#f472b6'];
+
+  const ctx = canvas.getContext('2d');
+  if (yoyChart) yoyChart.destroy();
+  yoyChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: MONTH_LABELS,
+      datasets: years.map((yr, i) => ({
+        label: yr,
+        data: yearData[yr],
+        backgroundColor: YEAR_COLORS[i % YEAR_COLORS.length] + '99',
+        borderColor:     YEAR_COLORS[i % YEAR_COLORS.length],
+        borderWidth: 1,
+        borderRadius: 4,
+      })),
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: { color: '#94a3b8', font: { size: 11, weight: '600' }, padding: 16, boxWidth: 10, usePointStyle: true },
+        },
+        tooltip: {
+          backgroundColor: 'rgba(11,15,35,.95)',
+          borderColor: 'rgba(255,255,255,.1)',
+          borderWidth: 1,
+          padding: 12,
+          callbacks: { label: ctx => `  ${ctx.dataset.label}: ${fmt_money(ctx.parsed.y)}` },
+        },
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,.04)', border: { display: false } },
+          ticks: { color: '#64748b', font: { size: 11, weight: '600' } },
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,.04)', border: { display: false } },
+          ticks: {
+            color: '#64748b', font: { size: 11, weight: '600' },
+            callback: v => v >= 1000 ? `$${(v/1000).toFixed(1)}k` : `$${v}`,
+          },
+        },
+      },
+    },
+  });
+}
+
+// ---- Inline Category Edit ----
+window.editCategory = function(el) {
+  const idx  = parseInt(el.dataset.idx, 10);
+  const txn  = allTransactions[idx];
+  if (!txn) return;
+
+  const sel = document.createElement('select');
+  sel.className = 'cat-edit-select';
+  ALL_CATEGORIES.forEach(cat => {
+    const opt = document.createElement('option');
+    opt.value = cat;
+    opt.textContent = cat;
+    if (cat === txn.category) opt.selected = true;
+    sel.appendChild(opt);
+  });
+
+  el.replaceWith(sel);
+  sel.focus();
+
+  const commit = async () => {
+    const newCat = sel.value;
+    txn.category = newCat;
+
+    const color = CAT_COLORS[newCat] || '#64748b';
+    const badge = document.createElement('span');
+    badge.className = 'cat-badge cat-editable';
+    badge.dataset.idx = idx;
+    badge.style.cssText = `background:${color}18;color:${color};border:1px solid ${color}30;font-size:11px;cursor:pointer`;
+    badge.textContent = newCat;
+    badge.onclick = () => editCategory(badge);
+    sel.replaceWith(badge);
+
+    await fetch('/api/update-category', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        date: txn.date,
+        description: txn.description,
+        amount: txn.amount,
+        category: newCat,
+      }),
+    });
+  };
+
+  sel.addEventListener('change', commit);
+  sel.addEventListener('blur', commit);
+};
+
+// ---- Recategorize All ----
+window.recategorizeAll = async function() {
+  const btn = document.getElementById('recat-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '↺ Working…'; }
+  try {
+    const res = await fetch('/api/recategorize', { method: 'POST' });
+    const d = await res.json();
+    if (d.ok) {
+      // Reload fresh data
+      const r2 = await fetch('/api/data');
+      const data = await r2.json();
+      allTransactions = data.transactions || [];
+      allTransactions.forEach((t, i) => t._idx = i);
+      filteredTransactions = [...allTransactions];
+      renderStatCards(data.summary);
+      renderPieChart(data.summary.by_category);
+      renderYoYChart(data.summary.by_month);
+      renderMerchants(data.summary.top_merchants);
+      renderTips(data.tips);
+      populateCategoryFilter();
+      applyFilters();
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '↺ Re-categorize'; }
+  }
+};
+
 // ---- Merchants ----
 function renderMerchants(merchants) {
   const tbody = document.getElementById('merchants-body');
@@ -416,7 +586,9 @@ function renderTable() {
         <td style="color:var(--muted);font-size:12px;white-space:nowrap">${fmt_date(t.date)}</td>
         <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500" title="${esc(t.description)}">${esc(t.description)}</td>
         <td>
-          <span class="cat-badge" style="background:${color}18;color:${color};border:1px solid ${color}30;font-size:11px">
+          <span class="cat-badge cat-editable" data-idx="${t._idx}"
+            style="background:${color}18;color:${color};border:1px solid ${color}30;font-size:11px"
+            onclick="editCategory(this)" title="Click to change category">
             ${esc(t.category || 'Other')}
           </span>
         </td>
@@ -467,7 +639,7 @@ function bindControls() {
 
 // ---- Active nav on scroll ----
 function activeSidebarOnScroll() {
-  const sections = ['overview','charts','merchants','tips','transactions'];
+  const sections = ['overview','charts','yoy','merchants','tips','transactions'];
   const links = {};
   sections.forEach(id => {
     links[id] = document.querySelector(`.sidebar-nav a[href="#${id}"]`);

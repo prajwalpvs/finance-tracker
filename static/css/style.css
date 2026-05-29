@@ -689,6 +689,32 @@ button { cursor: pointer; font-family: inherit; }
   padding: 3px 10px; border-radius: 100px;
   font-size: 11px; font-weight: 600;
 }
+.cat-editable {
+  cursor: pointer;
+  transition: filter .15s, transform .15s;
+}
+.cat-editable:hover {
+  filter: brightness(1.25);
+  transform: scale(1.04);
+}
+
+/* Inline category select dropdown */
+.cat-edit-select {
+  padding: 2px 6px;
+  background: var(--bg2);
+  border: 1px solid rgba(124,58,237,.6);
+  border-radius: 100px;
+  color: var(--text);
+  font-size: 11px; font-weight: 600; font-family: inherit;
+  box-shadow: 0 0 0 3px rgba(124,58,237,.15);
+  outline: none;
+  cursor: pointer;
+  max-width: 150px;
+}
+.cat-edit-select option { background: #1a1f35; }
+
+/* YoY chart */
+.chart-card.chart-yoy h3 { --chart-dot: var(--grad-green); }
 
 /* Date inputs — dark color scheme so calendar picker respects dark bg */
 .date-input { color-scheme: dark; min-width: 130px; }
