@@ -37,6 +37,7 @@ let pieChart = null;
 let barChart = null;
 let lineChart = null;
 let yoyChart  = null;
+let foodChart = null;
 
 document.addEventListener('DOMContentLoaded', init);
 
@@ -54,6 +55,7 @@ async function init() {
     renderPieChart(data.summary.by_category);
     renderBarChart(data.summary.by_month);
     renderLineChart(allTransactions);
+    renderFoodChart(allTransactions);
     renderYoYChart(data.summary.by_month);
     renderMerchants(data.summary.top_merchants);
     renderTips(data.tips);
@@ -314,6 +316,130 @@ function renderLineChart(transactions) {
   });
 }
 
+// ---- Food & Groceries Chart ----
+function renderFoodChart(transactions) {
+  const canvas = document.getElementById('food-chart');
+  if (!canvas) return;
+
+  const diningByMonth = {};
+  const groceriesByMonth = {};
+
+  for (const t of transactions) {
+    if (t.type !== 'expense' || !t.date) continue;
+    const month = t.date.slice(0, 7);
+    if (!/^\d{4}-\d{2}$/.test(month)) continue;
+    if (t.category === 'Dining Out') {
+      diningByMonth[month] = (diningByMonth[month] || 0) + t.amount;
+    } else if (t.category === 'Groceries') {
+      groceriesByMonth[month] = (groceriesByMonth[month] || 0) + t.amount;
+    }
+  }
+
+  const allMonths = [...new Set([...Object.keys(diningByMonth), ...Object.keys(groceriesByMonth)])].sort();
+
+  if (!allMonths.length) {
+    canvas.parentElement.innerHTML = '<p style="color:var(--muted);text-align:center;padding:40px 0">No food or grocery transactions found.</p>';
+    return;
+  }
+
+  const diningVals    = allMonths.map(m => +(diningByMonth[m]    || 0).toFixed(2));
+  const groceriesVals = allMonths.map(m => +(groceriesByMonth[m] || 0).toFixed(2));
+
+  const totalDining    = diningVals.reduce((a, b) => a + b, 0);
+  const totalGroceries = groceriesVals.reduce((a, b) => a + b, 0);
+  const avgDining      = totalDining    / allMonths.length;
+  const avgGroceries   = totalGroceries / allMonths.length;
+  const avgCombined    = (totalDining + totalGroceries) / allMonths.length;
+
+  document.getElementById('food-summary-cards').innerHTML = `
+    <div class="stat-card fade-in" style="flex:1;min-width:160px">
+      <div class="stat-icon">🍔</div>
+      <div class="stat-label">Dining Out</div>
+      <div class="stat-value" style="font-size:1.3rem;background:linear-gradient(135deg,#fb923c,#f97316);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${fmt_money(totalDining)}</div>
+      <div class="stat-sub">avg ${fmt_money(avgDining)}/mo</div>
+    </div>
+    <div class="stat-card fade-in" style="flex:1;min-width:160px;animation-delay:.05s">
+      <div class="stat-icon">🛒</div>
+      <div class="stat-label">Groceries</div>
+      <div class="stat-value" style="font-size:1.3rem;background:linear-gradient(135deg,#4ade80,#22c55e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${fmt_money(totalGroceries)}</div>
+      <div class="stat-sub">avg ${fmt_money(avgGroceries)}/mo</div>
+    </div>
+    <div class="stat-card fade-in" style="flex:1;min-width:160px;animation-delay:.1s">
+      <div class="stat-icon">🍽</div>
+      <div class="stat-label">Combined</div>
+      <div class="stat-value" style="font-size:1.3rem;background:linear-gradient(135deg,#a78bfa,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">${fmt_money(totalDining + totalGroceries)}</div>
+      <div class="stat-sub">avg ${fmt_money(avgCombined)}/mo</div>
+    </div>
+  `;
+
+  const ctx = canvas.getContext('2d');
+  if (foodChart) foodChart.destroy();
+  foodChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: allMonths,
+      datasets: [
+        {
+          label: 'Dining Out',
+          data: diningVals,
+          backgroundColor: '#fb923c99',
+          borderColor: '#fb923c',
+          borderWidth: 1,
+          borderRadius: 4,
+          stack: 'food',
+        },
+        {
+          label: 'Groceries',
+          data: groceriesVals,
+          backgroundColor: '#4ade8099',
+          borderColor: '#4ade80',
+          borderWidth: 1,
+          borderRadius: 4,
+          stack: 'food',
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: { color: '#94a3b8', font: { size: 11, weight: '600' }, padding: 16, boxWidth: 10, usePointStyle: true },
+        },
+        tooltip: {
+          backgroundColor: 'rgba(11,15,35,.95)',
+          borderColor: 'rgba(255,255,255,.1)',
+          borderWidth: 1,
+          padding: 12,
+          callbacks: {
+            label: ctx => `  ${ctx.dataset.label}: ${fmt_money(ctx.parsed.y)}`,
+            footer: items => {
+              const total = items.reduce((s, i) => s + i.parsed.y, 0);
+              return `  Total: ${fmt_money(total)}`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          stacked: true,
+          grid: { color: 'rgba(255,255,255,.04)', border: { display: false } },
+          ticks: { color: '#64748b', font: { size: 11, weight: '600' } },
+        },
+        y: {
+          stacked: true,
+          grid: { color: 'rgba(255,255,255,.04)', border: { display: false } },
+          ticks: {
+            color: '#64748b', font: { size: 11, weight: '600' },
+            callback: v => v >= 1000 ? `$${(v/1000).toFixed(1)}k` : `$${v}`,
+          },
+        },
+      },
+    },
+  });
+}
+
 // ---- Year-over-Year Chart ----
 function renderYoYChart(byMonth) {
   const canvas = document.getElementById('yoy-chart');
@@ -450,6 +576,7 @@ window.recategorizeAll = async function() {
       filteredTransactions = [...allTransactions];
       renderStatCards(data.summary);
       renderPieChart(data.summary.by_category);
+      renderFoodChart(allTransactions);
       renderYoYChart(data.summary.by_month);
       renderMerchants(data.summary.top_merchants);
       renderTips(data.tips);
@@ -639,7 +766,7 @@ function bindControls() {
 
 // ---- Active nav on scroll ----
 function activeSidebarOnScroll() {
-  const sections = ['overview','charts','yoy','merchants','tips','transactions'];
+  const sections = ['overview','charts','food','yoy','merchants','tips','transactions'];
   const links = {};
   sections.forEach(id => {
     links[id] = document.querySelector(`.sidebar-nav a[href="#${id}"]`);

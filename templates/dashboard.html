@@ -19,6 +19,7 @@
     <ul class="sidebar-nav">
       <li><a href="#overview"     class="active"><span class="nav-icon">🏠</span> Overview</a></li>
       <li><a href="#charts"               ><span class="nav-icon">📊</span> Charts</a></li>
+      <li><a href="#food"                 ><span class="nav-icon">🍽</span> Food</a></li>
       <li><a href="#yoy"                  ><span class="nav-icon">📅</span> Year vs Year</a></li>
       <li><a href="#merchants"            ><span class="nav-icon">🏪</span> Merchants</a></li>
       <li><a href="#tips"                 ><span class="nav-icon">💡</span> Tips</a></li>
@@ -84,6 +85,19 @@
       <div class="chart-card chart-line" style="margin-top:20px">
         <h3>Daily Spending Trend</h3>
         <div class="chart-container" style="height:200px"><canvas id="line-chart"></canvas></div>
+      </div>
+    </section>
+
+    <!-- Food & Groceries -->
+    <section id="food">
+      <h2 class="section-title">
+        <span class="section-title-icon" style="background:rgba(251,146,60,.2)">🍽</span>
+        Food &amp; Groceries
+      </h2>
+      <div class="chart-card">
+        <h3>Monthly Food Spending</h3>
+        <div id="food-summary-cards" style="display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap"></div>
+        <div class="chart-container" style="height:300px"><canvas id="food-chart"></canvas></div>
       </div>
     </section>
 
