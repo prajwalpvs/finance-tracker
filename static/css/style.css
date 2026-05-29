@@ -347,6 +347,61 @@ button { cursor: pointer; font-family: inherit; }
 .feature-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
 .feature-card p  { font-size: 12px; color: var(--muted2); line-height: 1.5; }
 
+/* ===== Progress UI (batch upload) ===== */
+.progress-container {
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: slideDown .2s ease-out;
+}
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+}
+.progress-bar-wrap {
+  height: 6px;
+  background: rgba(255,255,255,.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: var(--grad-purple);
+  border-radius: 3px;
+  transition: width .35s cubic-bezier(.4,0,.2,1);
+  width: 0%;
+}
+.progress-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.progress-file-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 5px 8px;
+  border-radius: var(--radius-xs);
+  transition: all .2s;
+}
+.progress-file-item.processing { color: var(--yellow); background: rgba(251,191,36,.06); }
+.progress-file-item.done       { color: var(--green); }
+.progress-file-item.error      { color: var(--red); }
+.pf-icon  { flex-shrink: 0; width: 14px; text-align: center; }
+.pf-name  { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-count { flex-shrink: 0; color: var(--muted); font-size: 11px; }
+
 /* Flash messages */
 .flash-messages { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 680px; }
 .flash-error {
@@ -581,7 +636,8 @@ button { cursor: pointer; font-family: inherit; }
   background: var(--chart-dot, var(--grad-purple));
   flex-shrink: 0;
 }
-.chart-card.chart-bar h3 { --chart-dot: var(--grad-red); }
+.chart-card.chart-bar  h3 { --chart-dot: var(--grad-red); }
+.chart-card.chart-line h3 { --chart-dot: var(--grad-purple); }
 .chart-container { position: relative; height: 290px; }
 
 /* ===== Tables ===== */
@@ -633,6 +689,9 @@ button { cursor: pointer; font-family: inherit; }
   padding: 3px 10px; border-radius: 100px;
   font-size: 11px; font-weight: 600;
 }
+
+/* Date inputs — dark color scheme so calendar picker respects dark bg */
+.date-input { color-scheme: dark; min-width: 130px; }
 
 /* Table controls */
 .table-controls { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
@@ -832,7 +891,8 @@ button { cursor: pointer; font-family: inherit; }
   .table-controls,
   .pagination,
   .parse-stats,
-  .error-banner { display: none !important; }
+  .error-banner,
+  .chart-line { display: none !important; }
 
   /* Full-width single column */
   .dashboard { display: block; }

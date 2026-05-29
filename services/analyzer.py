@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import re
 from collections import defaultdict
 
 
@@ -8,6 +9,8 @@ def build_summary(transactions: list) -> dict:
             'total_spent': 0,
             'total_income': 0,
             'net': 0,
+            'avg_monthly_spend': 0,
+            'avg_transaction': 0,
             'by_category': {},
             'by_month': {},
             'top_merchants': [],
@@ -56,10 +59,15 @@ def build_summary(transactions: list) -> dict:
         reverse=True,
     )[:10]
 
+    expense_count = sum(1 for t in transactions if t.get('type') == 'expense')
+    months_count = max(len(by_month), 1)
+
     return {
         'total_spent': round(total_spent, 2),
         'total_income': round(total_income, 2),
         'net': round(total_income - total_spent, 2),
+        'avg_monthly_spend': round(total_spent / months_count, 2),
+        'avg_transaction': round(total_spent / max(expense_count, 1), 2),
         'by_category': {k: round(v, 2) for k, v in sorted(by_category.items(), key=lambda x: x[1], reverse=True)},
         'by_month': dict(sorted(by_month.items())),
         'top_merchants': top_merchants,
@@ -71,10 +79,17 @@ def build_summary(transactions: list) -> dict:
     }
 
 
+_MERCHANT_PREFIX = re.compile(
+    r'^(SQ \*|TST\*?|AMZN MKTP US\*?|AMAZON\.COM\*?|PP \*|PAYPAL \*|SP \*|DRI\*|'
+    r'AUT \*|AUT\*|CKE \*|CKE\*|ACH \*|ACH\*|APL\*|APLPAY|GOOGLE \*|'
+    r'RECURRING |ONLINE |PURCHASE |POS |DEBIT |CREDIT )',
+    re.IGNORECASE
+)
+
 def _normalize_merchant(description: str) -> str:
-    words = description.split()
-    # Take first 3 meaningful words as merchant name
-    meaningful = [w for w in words if len(w) > 1 and not w.replace('*', '').replace('#', '').isdigit()]
+    desc = _MERCHANT_PREFIX.sub('', description).strip()
+    words = desc.split()
+    meaningful = [w for w in words if len(w) > 1 and not w.replace('*', '').replace('#', '').replace('-', '').isdigit()]
     return ' '.join(meaningful[:3]).title() if meaningful else description[:20].title()
 
 

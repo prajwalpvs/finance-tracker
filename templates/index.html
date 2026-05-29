@@ -40,7 +40,7 @@
           <div class="drop-icon-wrap">📄</div>
           <p class="drop-title">Drop your PDF statements here</p>
           <p class="drop-sub">or <button type="button" class="browse-btn">click to browse</button></p>
-          <p class="drop-hint">Chase · Citi · Bank of America · and most bank formats</p>
+          <p class="drop-hint">Chase · Citi · Bank of America · Discover · Zolve · and most bank formats</p>
         </div>
 
         <div id="file-list" class="file-list hidden" style="margin-top:16px"></div>
@@ -49,6 +49,18 @@
           <span id="btn-text">✨ Analyze Statements</span>
           <span id="btn-spinner" class="spinner hidden"></span>
         </button>
+
+        <!-- Progress UI shown during batch processing -->
+        <div id="progress-container" class="progress-container hidden" style="margin-top:16px">
+          <div class="progress-header">
+            <span id="progress-label">Preparing…</span>
+            <span id="progress-pct" class="grad-text">0%</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div id="progress-fill" class="progress-bar-fill"></div>
+          </div>
+          <div id="progress-file-list" class="progress-file-list"></div>
+        </div>
       </form>
 
       <!-- Feature cards -->
@@ -60,8 +72,8 @@
         </div>
         <div class="feature-card">
           <div class="feature-icon green">⚡</div>
-          <h3>Instant Insights</h3>
-          <p>Transactions auto-categorized with rule-based matching in seconds.</p>
+          <h3>Batch Upload</h3>
+          <p>Upload 30+ PDFs at once. Each file processed individually with live progress.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon blue">📈</div>
@@ -74,13 +86,22 @@
   </div><!-- /page-upload -->
 
   <script>
-    const dropZone  = document.getElementById('drop-zone');
-    const fileInput = document.getElementById('file-input');
-    const fileList  = document.getElementById('file-list');
-    const submitBtn = document.getElementById('submit-btn');
-    const form      = document.getElementById('upload-form');
-    const btnText   = document.getElementById('btn-text');
-    const btnSpinner= document.getElementById('btn-spinner');
+    function esc(s) {
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    const dropZone          = document.getElementById('drop-zone');
+    const fileInput         = document.getElementById('file-input');
+    const fileList          = document.getElementById('file-list');
+    const submitBtn         = document.getElementById('submit-btn');
+    const form              = document.getElementById('upload-form');
+    const btnText           = document.getElementById('btn-text');
+    const btnSpinner        = document.getElementById('btn-spinner');
+    const progressContainer = document.getElementById('progress-container');
+    const progressLabel     = document.getElementById('progress-label');
+    const progressPct       = document.getElementById('progress-pct');
+    const progressFill      = document.getElementById('progress-fill');
+    const progressFileList  = document.getElementById('progress-file-list');
 
     let selectedFiles = [];
 
@@ -92,7 +113,7 @@
       handleFiles(Array.from(e.dataTransfer.files));
     });
     dropZone.addEventListener('click', e => {
-      if (!e.target.classList.contains('browse-btn')) return;
+      if (e.target.classList.contains('remove-file')) return;
       fileInput.click();
     });
     fileInput.addEventListener('change', () => { handleFiles(Array.from(fileInput.files)); fileInput.value = ''; });
@@ -116,29 +137,89 @@
           ${selectedFiles.map((f, i) => `
             <li>
               <span class="file-icon">📄</span>
-              <span class="file-name">${f.name}</span>
-              <span class="file-size">${(f.size/1024).toFixed(0)} KB</span>
+              <span class="file-name">${esc(f.name)}</span>
+              <span class="file-size">${(f.size / 1024).toFixed(0)} KB</span>
               <button type="button" class="remove-file" data-idx="${i}">✕</button>
             </li>
           `).join('')}
         </ul>`;
       fileList.classList.remove('hidden');
+      btnText.textContent = `✨ Analyze ${selectedFiles.length} Statement${selectedFiles.length > 1 ? 's' : ''}`;
       submitBtn.classList.remove('hidden');
       fileList.querySelectorAll('.remove-file').forEach(btn =>
         btn.addEventListener('click', () => { selectedFiles.splice(+btn.dataset.idx, 1); renderFileList(); })
       );
     }
 
-    form.addEventListener('submit', e => {
+    // ---- Progress helpers ----
+    function showProgress() {
+      submitBtn.classList.add('hidden');
+      dropZone.style.pointerEvents = 'none';
+      progressContainer.classList.remove('hidden');
+      progressFileList.innerHTML = '';
+    }
+
+    function setProgress(done, total, currentName) {
+      const pct = Math.round((done / total) * 100);
+      progressLabel.textContent = done < total
+        ? `Processing ${done + 1} of ${total}: ${currentName}`
+        : 'All done! Redirecting…';
+      progressPct.textContent = `${pct}%`;
+      progressFill.style.width = `${pct}%`;
+    }
+
+    function addFileRow(idx, filename) {
+      const item = document.createElement('div');
+      item.className = 'progress-file-item processing';
+      item.id = `pf-${idx}`;
+      item.innerHTML = `<span class="pf-icon">⏳</span><span class="pf-name">${esc(filename)}</span>`;
+      progressFileList.appendChild(item);
+      item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+
+    function resolveFileRow(idx, ok, filename, txnCount) {
+      const item = document.getElementById(`pf-${idx}`);
+      if (!item) return;
+      item.className = `progress-file-item ${ok ? 'done' : 'error'}`;
+      item.innerHTML = `
+        <span class="pf-icon">${ok ? '✓' : '✗'}</span>
+        <span class="pf-name">${esc(filename)}</span>
+        <span class="pf-count">${ok ? txnCount + ' txns' : 'failed'}</span>`;
+    }
+
+    // ---- Async batch submit ----
+    form.addEventListener('submit', async e => {
       e.preventDefault();
       if (!selectedFiles.length) return;
-      const dt = new DataTransfer();
-      selectedFiles.forEach(f => dt.items.add(f));
-      fileInput.files = dt.files;
-      btnText.textContent = 'Processing…';
-      btnSpinner.classList.remove('hidden');
+
       submitBtn.disabled = true;
-      form.submit();
+      btnText.textContent = 'Starting…';
+      btnSpinner.classList.remove('hidden');
+
+      // Fresh analysis — clear any previous session
+      try { await fetch('/api/reset-session', { method: 'POST' }); } catch (_) {}
+
+      showProgress();
+
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        setProgress(i, selectedFiles.length, file.name);
+        addFileRow(i, file.name);
+
+        const fd = new FormData();
+        fd.append('pdf', file);
+
+        try {
+          const res  = await fetch('/api/parse-single', { method: 'POST', body: fd });
+          const data = await res.json();
+          resolveFileRow(i, data.ok, file.name, data.txn_count || 0);
+        } catch (_) {
+          resolveFileRow(i, false, file.name, 0);
+        }
+      }
+
+      setProgress(selectedFiles.length, selectedFiles.length, '');
+      setTimeout(() => { window.location.href = '/dashboard'; }, 900);
     });
   </script>
 </body>

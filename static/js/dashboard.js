@@ -3,6 +3,11 @@
 
 const PAGE_SIZE = 50;
 
+function debounce(fn, ms) {
+  let t;
+  return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+}
+
 const CAT_COLORS = {
   'Dining Out':     '#fb923c',
   'Groceries':      '#4ade80',
@@ -24,6 +29,7 @@ let filteredTransactions = [];
 let currentPage = 1;
 let pieChart = null;
 let barChart = null;
+let lineChart = null;
 
 document.addEventListener('DOMContentLoaded', init);
 
@@ -39,6 +45,7 @@ async function init() {
     renderStatCards(data.summary);
     renderPieChart(data.summary.by_category);
     renderBarChart(data.summary.by_month);
+    renderLineChart(allTransactions);
     renderMerchants(data.summary.top_merchants);
     renderTips(data.tips);
     populateCategoryFilter();
@@ -47,6 +54,9 @@ async function init() {
     activeSidebarOnScroll();
   } catch (err) {
     console.error('Failed to load data:', err);
+    document.querySelector('.main-content')?.insertAdjacentHTML('afterbegin',
+      `<div class="error-banner fade-in">⚠ Failed to load data. <a href="/">Upload again</a></div>`
+    );
   }
 }
 
@@ -57,13 +67,20 @@ function renderStatCards(s) {
   const rangeStr = dateRange.start
     ? `${fmt_date(dateRange.start)} – ${fmt_date(dateRange.end)}`
     : 'N/A';
+  const monthCount = Object.keys(s.by_month || {}).length;
+  const avgMonthly = s.avg_monthly_spend != null
+    ? s.avg_monthly_spend
+    : +(s.total_spent / Math.max(monthCount, 1)).toFixed(2);
+  const avgTxn = s.avg_transaction != null
+    ? s.avg_transaction
+    : 0;
 
   document.getElementById('stat-cards').innerHTML = `
     <div class="stat-card card-spent fade-in" style="animation-delay:.05s">
       <div class="stat-icon">💸</div>
       <div class="stat-label">Total Spent</div>
       <div class="stat-value grad-text-red">${fmt_money(s.total_spent)}</div>
-      <div class="stat-sub">${s.transaction_count} transactions</div>
+      <div class="stat-sub">${s.transaction_count} transactions · avg ${fmt_money(avgTxn)}/txn</div>
     </div>
     <div class="stat-card card-income fade-in" style="animation-delay:.1s">
       <div class="stat-icon">💰</div>
@@ -81,9 +98,9 @@ function renderStatCards(s) {
     </div>
     <div class="stat-card card-range fade-in" style="animation-delay:.2s">
       <div class="stat-icon">📅</div>
-      <div class="stat-label">Date Range</div>
-      <div class="stat-value" style="font-size:14px;font-weight:700;line-height:1.4;margin-top:4px;-webkit-text-fill-color:var(--purple)">${rangeStr}</div>
-      <div class="stat-sub">${Object.keys(s.by_month || {}).length} month(s) of data</div>
+      <div class="stat-label">Avg / Month</div>
+      <div class="stat-value grad-text">${fmt_money(avgMonthly)}</div>
+      <div class="stat-sub">${rangeStr} · ${monthCount} month(s)</div>
     </div>
   `;
 }
@@ -196,6 +213,84 @@ function renderBarChart(byMonth) {
   });
 }
 
+// ---- Line Chart (Daily Spending Trend) ----
+function renderLineChart(transactions) {
+  const canvas = document.getElementById('line-chart');
+  if (!canvas) return;
+
+  const daily = {};
+  for (const t of transactions) {
+    if (t.type !== 'expense' || !t.date) continue;
+    daily[t.date] = (daily[t.date] || 0) + t.amount;
+  }
+
+  const dates = Object.keys(daily).sort();
+  if (!dates.length) {
+    canvas.parentElement.innerHTML = '<p style="color:var(--muted);text-align:center;padding:40px 0">No expense data to chart.</p>';
+    return;
+  }
+
+  const labels = dates.map(fmt_date);
+  const values = dates.map(d => +daily[d].toFixed(2));
+
+  const gCtx = canvas.getContext('2d');
+  const gradient = gCtx.createLinearGradient(0, 0, 0, 200);
+  gradient.addColorStop(0, 'rgba(124,58,237,.45)');
+  gradient.addColorStop(1, 'rgba(124,58,237,.0)');
+
+  if (lineChart) lineChart.destroy();
+  lineChart = new Chart(gCtx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Daily Spend',
+        data: values,
+        borderColor: '#a78bfa',
+        borderWidth: 2,
+        pointRadius: dates.length > 60 ? 0 : 3,
+        pointHoverRadius: 6,
+        pointBackgroundColor: '#a78bfa',
+        fill: true,
+        backgroundColor: gradient,
+        tension: 0.4,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(11,15,35,.95)',
+          borderColor: 'rgba(255,255,255,.1)',
+          borderWidth: 1,
+          padding: 12,
+          callbacks: { label: ctx => `  ${fmt_money(ctx.parsed.y)}` },
+        },
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,.04)', border: { display: false } },
+          ticks: {
+            color: '#64748b',
+            font: { size: 10, weight: '600' },
+            maxTicksLimit: 12,
+            maxRotation: 0,
+          },
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,.04)', border: { display: false } },
+          ticks: {
+            color: '#64748b', font: { size: 11, weight: '600' },
+            callback: v => v >= 1000 ? `$${(v/1000).toFixed(1)}k` : `$${v}`,
+          },
+        },
+      },
+    },
+  });
+}
+
 // ---- Merchants ----
 function renderMerchants(merchants) {
   const tbody = document.getElementById('merchants-body');
@@ -271,12 +366,16 @@ function applyFilters() {
   const cat    = document.getElementById('category-filter').value;
   const type   = document.getElementById('type-filter').value;
   const sort   = document.getElementById('sort-select').value;
+  const from   = document.getElementById('date-from')?.value || '';
+  const to     = document.getElementById('date-to')?.value   || '';
 
   filteredTransactions = allTransactions.filter(t => {
-    if (search && !t.description.toLowerCase().includes(search) &&
+    if (search && !(t.description || '').toLowerCase().includes(search) &&
         !(t.category || '').toLowerCase().includes(search)) return false;
     if (cat  && t.category !== cat)  return false;
     if (type && t.type     !== type) return false;
+    if (from && t.date < from) return false;
+    if (to   && t.date > to)   return false;
     return true;
   });
 
@@ -358,10 +457,12 @@ window.goPage = function(p) {
 
 // ---- Controls ----
 function bindControls() {
-  document.getElementById('search-input').addEventListener('input', applyFilters);
+  document.getElementById('search-input').addEventListener('input', debounce(applyFilters, 250));
   document.getElementById('category-filter').addEventListener('change', applyFilters);
   document.getElementById('type-filter').addEventListener('change', applyFilters);
   document.getElementById('sort-select').addEventListener('change', applyFilters);
+  document.getElementById('date-from')?.addEventListener('change', applyFilters);
+  document.getElementById('date-to')?.addEventListener('change', applyFilters);
 }
 
 // ---- Active nav on scroll ----

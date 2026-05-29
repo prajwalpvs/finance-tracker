@@ -1,5 +1,6 @@
 import os
 import re
+from collections import Counter
 import pdfplumber
 from datetime import datetime
 
@@ -23,19 +24,19 @@ except ImportError:
 # Regex patterns for various bank statement formats
 # Order matters — two-date formats must come before single-date to avoid mismatch
 PATTERNS = [
-    # Discover: MM/DD MM/DD DESCRIPTION AMOUNT  (trans date + post date, no year)
+    # Discover / BoA CC: MM/DD MM/DD DESCRIPTION ... AMOUNT  (trans date + post date)
     {
         'name': 'discover',
         're': re.compile(
-            r'^(?P<date>\d{2}/\d{2})\s+\d{2}/\d{2}\s+(?P<desc>.+?)\s+(?P<amount>-?[\d,]+\.\d{2}CR?)\s*$',
+            r'^(?P<date>\d{2}/\d{2})\s+\d{2}/\d{2}\s+(?P<desc>.+?)\s+(?P<amount>-?[\d,]+\.\d{2}(?:CR)?)\s*$',
             re.IGNORECASE,
         )
     },
-    # BoA credit card: MM/DD/YY MM/DD/YY DESCRIPTION AMOUNT  (trans + post date)
+    # BoA credit card with full year: MM/DD/YY MM/DD/YY DESCRIPTION AMOUNT
     {
         'name': 'boa_cc',
         're': re.compile(
-            r'^(?P<date>\d{2}/\d{2}/\d{2,4})\s+\d{2}/\d{2}/\d{2,4}\s+(?P<desc>.+?)\s+(?P<amount>-?[\d,]+\.\d{2}CR?)\s*$',
+            r'^(?P<date>\d{2}/\d{2}/\d{2,4})\s+\d{2}/\d{2}/\d{2,4}\s+(?P<desc>.+?)\s+(?P<amount>-?[\d,]+\.\d{2}(?:CR)?)\s*$',
             re.IGNORECASE,
         )
     },
@@ -43,7 +44,7 @@ PATTERNS = [
     {
         'name': 'zolve',
         're': re.compile(
-            r'^(?P<date>\d{4}-\d{2}-\d{2})\s+(?P<desc>.+?)\s+\$?(?P<amount>-?[\d,]+\.\d{2}CR?)\s*$',
+            r'^(?P<date>\d{4}-\d{2}-\d{2})\s+(?P<desc>.+?)\s+\$?(?P<amount>-?[\d,]+\.\d{2}(?:CR)?)\s*$',
             re.IGNORECASE,
         )
     },
@@ -51,7 +52,7 @@ PATTERNS = [
     {
         'name': 'chase',
         're': re.compile(
-            r'^(?P<date>\d{2}/\d{2})\s+(?P<desc>.+?)\s+(?P<amount>-?\$?[\d,]+\.\d{2}CR?)\s*$',
+            r'^(?P<date>\d{2}/\d{2})\s+(?P<desc>.+?)\s+(?P<amount>-?\$?[\d,]+\.\d{2}(?:CR)?)\s*$',
             re.IGNORECASE,
         )
     },
@@ -59,7 +60,7 @@ PATTERNS = [
     {
         'name': 'citi',
         're': re.compile(
-            r'^(?P<date>\d{2}/\d{2}/\d{2,4})\s+(?P<desc>.+?)\s+(?P<amount>-?\$?[\d,]+\.\d{2}CR?)\s*$',
+            r'^(?P<date>\d{2}/\d{2}/\d{2,4})\s+(?P<desc>.+?)\s+(?P<amount>-?\$?[\d,]+\.\d{2}(?:CR)?)\s*$',
             re.IGNORECASE,
         )
     },
@@ -67,7 +68,7 @@ PATTERNS = [
     {
         'name': 'boa',
         're': re.compile(
-            r'^(?P<date>\d{2}/\d{2}/\d{2,4})\s+(?P<desc>.+?)\s+\$?(?P<amount>-?[\d,]+\.\d{2}CR?)\s*$',
+            r'^(?P<date>\d{2}/\d{2}/\d{2,4})\s+(?P<desc>.+?)\s+\$?(?P<amount>-?[\d,]+\.\d{2}(?:CR)?)\s*$',
             re.IGNORECASE,
         )
     },
@@ -90,11 +91,13 @@ PATTERNS = [
 SKIP_PATTERNS = re.compile(
     r'(opening balance|closing balance|previous balance|new balance|'
     r'minimum payment|payment due|credit limit|available credit|'
-    r'statement period|account number|routing number|page \d|'
+    r'statement period|account number|routing number|page \d+|'
     r'date\s+description\s+amount|transaction\s+date|posting\s+date|'
     r'trans\.\s*date|post\.\s*date|reference\s+number|'
     r'beginning balance|ending balance|total\s+fees|total\s+interest|'
-    r'cashback\s+bonus|rewards\s+summary|total\s+transactions)',
+    r'interest\s+charged|cashback\s+bonus|rewards\s+summary|'
+    r'total\s+transactions|total\s+payments|total\s+purchases|'
+    r'2026\s+totals|year-to-date)',
     re.IGNORECASE
 )
 
@@ -159,11 +162,19 @@ def _parse_line(line: str, year_hint: int = None) -> dict | None:
         if not m:
             continue
         try:
-            is_parens = ')' in line and '(' in line
+            # is_parens only when amount is actually wrapped in () in the line
+            amt_start = m.start('amount')
+            is_parens = (
+                pattern_def['name'] == 'parens'
+                and amt_start > 0
+                and line[amt_start - 1] == '('
+            )
             raw_amount = m.group('amount')
             amount, is_cr = _normalize_amount(raw_amount, is_parens)
             date_str = _normalize_date(m.group('date'), year_hint)
             desc = m.group('desc').strip()
+            # Strip trailing bank reference/account codes (4+ digit sequences at end)
+            desc = re.sub(r'(\s+\d{3,})+\s*$', '', desc).strip()
             if len(desc) < 3 or re.match(r'^[\d\s\-\.]+$', desc):
                 continue
             # CR suffix or negative amount = credit/income
@@ -222,10 +233,10 @@ def parse_pdf(file_path: str) -> list:
             if not full_text.strip():
                 raise ValueError('no_text')
 
-        # Try to extract a year from the document
-        year_match = re.search(r'\b(20\d{2})\b', full_text)
-        if year_match:
-            year_hint = int(year_match.group(1))
+        # Use most common year in document (Counter beats first-match for multi-year PDFs)
+        year_matches = re.findall(r'\b(20\d{2})\b', full_text)
+        if year_matches:
+            year_hint = int(Counter(year_matches).most_common(1)[0][0])
 
         for line in full_text.split('\n'):
             txn = _parse_line(line, year_hint)
