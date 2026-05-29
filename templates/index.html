@@ -7,6 +7,12 @@
   <link rel="stylesheet" href="/static/css/style.css" />
 </head>
 <body>
+<script>
+  (function() {
+    const t = localStorage.getItem('theme');
+    if (t) document.body.setAttribute('data-theme', t);
+  })();
+</script>
   <div class="page-upload">
 
     {% with messages = get_flashed_messages() %}
@@ -19,17 +25,22 @@
 
     <div class="upload-container">
 
-      <!-- Hero -->
-      <div class="upload-header">
-        <div class="logo">
-          <div class="logo-icon">📊</div>
-          <span class="logo-text grad-text">FinanceTracker</span>
+      <!-- Hero with Image -->
+      <div class="hero-split">
+        <div class="upload-header" style="text-align: left; padding: 0;">
+          <div class="logo" style="justify-content: flex-start;">
+            <div class="logo-icon">📊</div>
+            <span class="logo-text grad-text">FinanceTracker</span>
+          </div>
+          <h1 class="upload-headline" style="font-size: 48px;">
+            Know exactly where<br>
+            <span class="grad-text">your money goes.</span>
+          </h1>
+          <p class="tagline" style="margin: 0; max-width: 100%;">Upload your bank statement PDFs — get instant categorization, charts, and personalized savings tips.</p>
         </div>
-        <h1 class="upload-headline">
-          Know exactly where<br>
-          <span class="grad-text">your money goes.</span>
-        </h1>
-        <p class="tagline">Upload your bank statement PDFs — get instant categorization, charts, and savings tips.</p>
+        <div class="hero-image-wrap">
+          <img src="/static/img/hero.png" alt="Savings Illustration" class="hero-img" />
+        </div>
       </div>
 
       <!-- Upload form -->
@@ -79,6 +90,60 @@
           <div class="feature-icon blue">📈</div>
           <h3>Smart Tips</h3>
           <p>Personalized savings tips based on your real spending patterns.</p>
+        </div>
+      </div>
+
+      <!-- Interactive Mock Preview -->
+      <div class="preview-section fade-in">
+        <h2 class="preview-title">See the Insights in Action</h2>
+        <p class="preview-subtitle">A live mockup of the interactive dashboard generated after uploading.</p>
+        
+        <div class="mock-dashboard">
+          <div class="mock-sidebar">
+            <div class="mock-nav-item active">🏠 Overview</div>
+            <div class="mock-nav-item">📊 Charts</div>
+            <div class="mock-nav-item">🏪 Top Merchants</div>
+            <div class="mock-nav-item">💡 Savings Tips</div>
+          </div>
+          
+          <div class="mock-main">
+            <div class="mock-widgets">
+              <div class="mock-widget card-spent">
+                <span class="widget-label">Spent this month</span>
+                <span class="widget-value">$1,240.50</span>
+              </div>
+              <div class="mock-widget card-savings">
+                <span class="widget-label">Potential Savings</span>
+                <span class="widget-value">$320.00</span>
+              </div>
+            </div>
+            
+            <div class="mock-charts">
+              <div class="mock-chart-card">
+                <div class="chart-header">Monthly Spending Trend</div>
+                <div class="chart-bars">
+                  <div class="bar-col" style="--height: 40%"></div>
+                  <div class="bar-col" style="--height: 60%"></div>
+                  <div class="bar-col" style="--height: 85%"></div>
+                  <div class="bar-col" style="--height: 50%"></div>
+                </div>
+              </div>
+              <div class="mock-chart-card">
+                <div class="chart-header">Category Breakdown</div>
+                <div class="radial-wrap">
+                  <svg class="radial-svg" viewBox="0 0 36 36">
+                    <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path class="ring-fill dining" stroke-dasharray="45, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path class="ring-fill shopping" stroke-dasharray="30, 100" stroke-dashoffset="-45" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                  </svg>
+                  <div class="radial-center">
+                    <span class="pct-val">75%</span>
+                    <span class="pct-lbl">Food & Shop</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

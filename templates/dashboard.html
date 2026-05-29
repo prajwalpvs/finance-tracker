@@ -7,6 +7,12 @@
   <link rel="stylesheet" href="/static/css/style.css" />
 </head>
 <body>
+<script>
+  (function() {
+    const t = localStorage.getItem('theme');
+    if (t) document.body.setAttribute('data-theme', t);
+  })();
+</script>
 <div class="dashboard">
 
   <!-- Sidebar -->
@@ -25,6 +31,16 @@
       <li><a href="#tips"                 ><span class="nav-icon">💡</span> Tips</a></li>
       <li><a href="#transactions"         ><span class="nav-icon">📋</span> Transactions</a></li>
     </ul>
+
+    <div class="theme-switcher">
+      <span class="theme-label">🎨 Preset Theme</span>
+      <div class="theme-btns">
+        <button class="theme-btn active" onclick="setTheme('default')" title="Deep Space" style="background:#4f46e5;"></button>
+        <button class="theme-btn" onclick="setTheme('solar')" title="Solar Eclipse" style="background:#f59e0b;"></button>
+        <button class="theme-btn" onclick="setTheme('cyberpunk')" title="Cyberpunk" style="background:#ff007f;"></button>
+        <button class="theme-btn" onclick="setTheme('forest')" title="Forest Jade" style="background:#10b981;"></button>
+      </div>
+    </div>
 
     <div class="sidebar-actions">
       <button class="btn-secondary" onclick="exportCSV()">⬇ Export CSV</button>
@@ -199,5 +215,34 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="/static/js/dashboard.js"></script>
+<script>
+  function setTheme(theme) {
+    if (theme === 'default') {
+      document.body.removeAttribute('data-theme');
+      localStorage.removeItem('theme');
+    } else {
+      document.body.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+    }
+    
+    // Update active class on buttons
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    // Find button with matching onclick
+    const btn = Array.from(document.querySelectorAll('.theme-btn')).find(b => b.getAttribute('onclick').includes(theme));
+    if (btn) btn.classList.add('active');
+  }
+
+  // Set active class on page load
+  document.addEventListener('DOMContentLoaded', () => {
+    const currentTheme = localStorage.getItem('theme') || 'default';
+    const btn = Array.from(document.querySelectorAll('.theme-btn')).find(b => b.getAttribute('onclick').includes(currentTheme));
+    if (btn) {
+      document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+  });
+</script>
 </body>
 </html>
